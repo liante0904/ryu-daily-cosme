@@ -1,0 +1,10 @@
+/* Reset and base styles moved to App.css or neutralized to prevent theme flash */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
