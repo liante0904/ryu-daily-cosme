@@ -3,6 +3,36 @@ import type { Keyword } from '../components/KeywordItem';
 import type { ApiResult } from '../types';
 import { API_BASE_URL } from '../utils';
 
+const extractFilename = (contentDisposition: string | null) => {
+  if (!contentDisposition) return null;
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+
+  const quotedMatch = contentDisposition.match(/filename="([^"]+)"/i);
+  if (quotedMatch?.[1]) return quotedMatch[1];
+
+  const plainMatch = contentDisposition.match(/filename=([^;]+)/i);
+  return plainMatch?.[1]?.trim() || null;
+};
+
+const triggerBrowserDownload = (blob: Blob, filename: string) => {
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+};
+
 export function useKeywords() {
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [apiResult, setApiResult] = useState<ApiResult | null>(null);
@@ -75,13 +105,28 @@ export function useKeywords() {
         body: JSON.stringify({ keywords: keywords.map(k => k.text) }),
       });
 
-      if (!response.ok) throw new Error('API 호출 실패');
-      
-      const data = await response.json();
-      setApiResult(data);
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type') || '';
+        const errorBody = contentType.includes('application/json')
+          ? await response.json()
+          : { detail: await response.text() };
+        throw new Error(errorBody.detail || errorBody.message || 'API 호출 실패');
+      }
+
+      const contentDisposition = response.headers.get('content-disposition');
+      const filename = extractFilename(contentDisposition) || `더샘_키워드_결과_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '')}.csv`;
+      const blob = await response.blob();
+      triggerBrowserDownload(blob, filename);
+
+      setApiResult({
+        message: 'CSV 파일 다운로드를 시작했습니다.',
+        filename,
+      });
     } catch (err) {
       console.error('API 에러:', err);
-      setApiResult({ error: '조회 중 오류가 발생했습니다.' });
+      setApiResult({
+        error: err instanceof Error ? err.message : '조회 중 오류가 발생했습니다.',
+      });
     } finally {
       setIsLoading(false);
     }
