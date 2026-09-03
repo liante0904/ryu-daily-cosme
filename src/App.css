@@ -460,6 +460,7 @@ body {
   margin-top: 2px;
   color: var(--text-secondary);
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .server-file-list {
