@@ -354,14 +354,21 @@ body {
 }
 
 .list-content-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
-  gap: 20px;
-  align-items: start;
+  position: relative;
 }
 
 .keyword-list-column {
-  min-width: 0;
+  width: 100%;
+}
+
+/* 기존 키워드 목록 폭은 유지하고, 넓은 화면에서만 오른쪽 빈 공간에 배치 */
+@media (min-width: 1400px) {
+  .server-files-panel {
+    position: absolute;
+    top: 0;
+    left: calc(100% + 20px);
+    width: 300px;
+  }
 }
 
 .server-files-header {
@@ -429,8 +436,10 @@ body {
 }
 
 @media (max-width: 700px) {
-  .list-content-layout {
-    grid-template-columns: 1fr;
+  .server-files-panel {
+    position: static;
+    width: 100%;
+    margin-top: 20px;
   }
 }
 
