@@ -353,6 +353,67 @@ body {
   border-radius: 12px;
 }
 
+.server-progress-panel {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.server-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.cancel-btn {
+  color: var(--danger);
+}
+
+.server-progress-count {
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.server-progress-track {
+  width: 100%;
+  height: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.server-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.server-progress-percent {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-align: right;
+}
+
+.server-progress-keyword {
+  overflow-wrap: anywhere;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.server-progress-message {
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
 .list-content-layout {
   position: relative;
 }

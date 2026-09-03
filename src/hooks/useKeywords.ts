@@ -9,6 +9,14 @@ export type ServerCsvFile = {
   created_at: number;
 };
 
+export type ServerProgress = {
+  status: 'idle' | 'running' | 'completed' | 'cancelled' | 'unknown' | string;
+  current: number;
+  total: number;
+  keyword: string;
+  message: string;
+};
+
 const extractFilename = (contentDisposition: string | null) => {
   if (!contentDisposition) return null;
 
@@ -44,6 +52,9 @@ export function useKeywords() {
   const [apiResult, setApiResult] = useState<ApiResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [serverFiles, setServerFiles] = useState<ServerCsvFile[]>([]);
+  const [serverProgress, setServerProgress] = useState<ServerProgress>({
+    status: 'idle', current: 0, total: 0, keyword: '', message: '',
+  });
 
   const refreshServerFiles = async () => {
     try {
@@ -70,11 +81,38 @@ export function useKeywords() {
     }
   };
 
+  const refreshServerProgress = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ryu/mapia/status/`);
+      if (!response.ok) throw new Error('작업 상태 로딩 실패');
+      setServerProgress(await response.json());
+    } catch (err) {
+      console.error('작업 상태 로딩 실패:', err);
+    }
+  };
+
+  const cancelServerGeneration = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ryu/mapia/cancel/`, { method: 'POST' });
+      if (!response.ok) throw new Error('생성 중단 요청 실패');
+      await refreshServerProgress();
+    } catch (err) {
+      console.error('생성 중단 요청 실패:', err);
+      setApiResult({ error: '생성 중단 요청에 실패했습니다.' });
+    }
+  };
+
   useEffect(() => {
     refreshServerFiles();
     const interval = window.setInterval(refreshServerFiles, 5 * 60 * 1000);
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    refreshServerProgress();
+    const interval = window.setInterval(refreshServerProgress, isLoading ? 5000 : 5 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [isLoading]);
 
   // Initial Data Fetch (History)
   useEffect(() => {
@@ -184,5 +222,8 @@ export function useKeywords() {
     serverFiles,
     refreshServerFiles,
     downloadServerFile,
+    serverProgress,
+    refreshServerProgress,
+    cancelServerGeneration,
   };
 }
