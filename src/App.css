@@ -379,6 +379,11 @@ body {
   margin-bottom: 10px;
 }
 
+.server-files-header > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
 .server-files-header h4 {
   font-size: 14px;
   font-weight: 650;
@@ -418,9 +423,9 @@ body {
 
 .server-file-name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
   font-size: 12px;
 }
 
@@ -428,6 +433,7 @@ body {
   flex-shrink: 0;
   color: var(--text-secondary);
   font-size: 11px;
+  white-space: normal;
 }
 
 .server-files-empty {
