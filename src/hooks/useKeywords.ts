@@ -3,6 +3,12 @@ import type { Keyword } from '../components/KeywordItem';
 import type { ApiResult } from '../types';
 import { API_BASE_URL } from '../utils';
 
+export type ServerCsvFile = {
+  filename: string;
+  size: number;
+  created_at: number;
+};
+
 const extractFilename = (contentDisposition: string | null) => {
   if (!contentDisposition) return null;
 
@@ -37,6 +43,38 @@ export function useKeywords() {
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [apiResult, setApiResult] = useState<ApiResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [serverFiles, setServerFiles] = useState<ServerCsvFile[]>([]);
+
+  const refreshServerFiles = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ryu/mapia/files/`);
+      if (!response.ok) throw new Error('서버 파일 목록 로딩 실패');
+      const data = await response.json();
+      setServerFiles(Array.isArray(data.files) ? data.files : []);
+    } catch (err) {
+      console.error('서버 파일 목록 로딩 실패:', err);
+    }
+  };
+
+  const downloadServerFile = async (filename: string) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/ryu/mapia/files/${encodeURIComponent(filename)}`
+      );
+      if (!response.ok) throw new Error('파일 다운로드 실패');
+      const blob = await response.blob();
+      triggerBrowserDownload(blob, filename);
+    } catch (err) {
+      console.error('서버 파일 다운로드 실패:', err);
+      setApiResult({ error: '파일 다운로드에 실패했습니다.' });
+    }
+  };
+
+  useEffect(() => {
+    refreshServerFiles();
+    const interval = window.setInterval(refreshServerFiles, 5 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   // Initial Data Fetch (History)
   useEffect(() => {
@@ -143,5 +181,8 @@ export function useKeywords() {
     updateKeyword,
     clearKeywords,
     callMafiaApi,
+    serverFiles,
+    refreshServerFiles,
+    downloadServerFile,
   };
 }

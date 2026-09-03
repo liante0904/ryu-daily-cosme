@@ -345,6 +345,78 @@ body {
   color: var(--danger);
 }
 
+.server-files-panel {
+  margin-bottom: 20px;
+  padding: 14px;
+  background-color: var(--item-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.server-files-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.server-files-header h4 {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.server-files-header span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.server-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.server-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.server-file-item:hover {
+  background-color: var(--item-hover);
+  border-color: var(--accent);
+}
+
+.server-file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.server-file-date {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.server-files-empty {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 /* Keyword Items */
 .keyword-list {
   display: flex;

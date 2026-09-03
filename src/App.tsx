@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Download, Eraser } from 'lucide-react';
+import { Plus, Search, Download, Eraser, RefreshCw } from 'lucide-react';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -53,6 +53,9 @@ function App() {
     updateKeyword,
     clearKeywords,
     callMafiaApi,
+    serverFiles,
+    refreshServerFiles,
+    downloadServerFile,
   } = useKeywords();
 
   // Scroll Behavior Detection
@@ -219,6 +222,38 @@ function App() {
                     <Eraser size={14} /> 일괄 삭제
                   </button>
                 </div>
+              </div>
+
+              <div className="server-files-panel">
+                <div className="server-files-header">
+                  <div>
+                    <h4>서버 저장 CSV</h4>
+                    <span>5분마다 자동 갱신 · 작업 완료 후 다시 접속해도 다운로드할 수 있습니다.</span>
+                  </div>
+                  <button className="text-btn" onClick={refreshServerFiles} title="파일 목록 새로고침">
+                    <RefreshCw size={14} /> 새로고침
+                  </button>
+                </div>
+                {serverFiles.length > 0 ? (
+                  <div className="server-file-list">
+                    {serverFiles.map((file) => (
+                      <button
+                        key={file.filename}
+                        className="server-file-item"
+                        onClick={() => downloadServerFile(file.filename)}
+                        title={`${file.filename} 다운로드`}
+                      >
+                        <Download size={15} />
+                        <span className="server-file-name">{file.filename}</span>
+                        <span className="server-file-date">
+                          {new Date(file.created_at * 1000).toLocaleString('ko-KR')}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="server-files-empty">저장된 CSV 파일이 없습니다.</div>
+                )}
               </div>
 
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
