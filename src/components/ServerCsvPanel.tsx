@@ -1,5 +1,6 @@
-import { Download, RefreshCw, Square } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 import type { ServerCsvFile, ServerProgress } from '../hooks/useKeywords';
+import { GenerationProgress } from './GenerationProgress';
 
 type ServerCsvPanelProps = {
   files: ServerCsvFile[];
@@ -12,36 +13,11 @@ type ServerCsvPanelProps = {
 
 export function ServerCsvPanel({ files, progress, isRequestActive, onRefresh, onCancel, onDownload }: ServerCsvPanelProps) {
   const isRunning = isRequestActive || progress.status === 'running' || progress.status === 'cancelling';
-  const isCancelling = progress.status === 'cancelling';
-  const progressPercent = progress.total > 0
-    ? Math.min(100, Math.round((progress.current / progress.total) * 100))
-    : 0;
-
-  const handleCancel = async () => {
-    await onCancel();
-  };
 
   return (
     <div className="server-files-panel">
       {isRunning && (
-        <div className="server-progress-panel">
-          <div className="server-progress-header">
-            <strong>CSV 생성 중</strong>
-            <button className="text-btn cancel-btn" onClick={handleCancel} disabled={isCancelling}>
-              <Square size={12} /> {isCancelling ? '중단 처리 중' : '생성 중단'}
-            </button>
-          </div>
-          {isCancelling && <div className="server-cancelling-message">중단 요청 전송됨 · 현재 요청이 끝나면 생성을 중단합니다.</div>}
-          <div className="server-progress-count">
-            {progress.total > 0 ? `${progress.current} / ${progress.total}` : '준비 중'}
-          </div>
-          <div className="server-progress-track" role="progressbar" aria-valuenow={progress.current} aria-valuemin={0} aria-valuemax={progress.total || 1}>
-            <div className="server-progress-bar" style={{ width: `${progressPercent}%` }} />
-          </div>
-          <div className="server-progress-percent">{progressPercent}%</div>
-          <div className="server-progress-keyword">{progress.keyword || '서버 작업을 시작하는 중입니다.'}</div>
-          <div className="server-progress-loading">데이터를 가져오는 중입니다...</div>
-        </div>
+        <GenerationProgress progress={progress} isRequestActive={isRequestActive} onCancel={onCancel} />
       )}
 
       <div className="server-files-header">
