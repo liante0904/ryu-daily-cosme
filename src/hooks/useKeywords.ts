@@ -81,13 +81,16 @@ export function useKeywords() {
     }
   };
 
-  const refreshServerProgress = async () => {
+  const refreshServerProgress = async (): Promise<ServerProgress | null> => {
     try {
       const response = await fetch(`${API_BASE_URL}/ryu/mapia/status/`);
       if (!response.ok) throw new Error('작업 상태 로딩 실패');
-      setServerProgress(await response.json());
+      const nextProgress = await response.json();
+      setServerProgress(nextProgress);
+      return nextProgress;
     } catch (err) {
       console.error('작업 상태 로딩 실패:', err);
+      return null;
     }
   };
 
@@ -110,9 +113,10 @@ export function useKeywords() {
 
   useEffect(() => {
     refreshServerProgress();
-    const interval = window.setInterval(refreshServerProgress, isLoading ? 5000 : 5 * 60 * 1000);
+    const isMonitoring = isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
+    const interval = window.setInterval(refreshServerProgress, isMonitoring ? 5000 : 5 * 60 * 1000);
     return () => window.clearInterval(interval);
-  }, [isLoading]);
+  }, [isLoading, serverProgress.status]);
 
   // Initial Data Fetch (History)
   useEffect(() => {
@@ -200,9 +204,11 @@ export function useKeywords() {
       });
     } catch (err) {
       console.error('API 에러:', err);
-      setApiResult({
-        error: err instanceof Error ? err.message : '조회 중 오류가 발생했습니다.',
-      });
+      const latestStatus = await refreshServerProgress();
+      const isServerJobRunning = latestStatus?.status === 'running' || latestStatus?.status === 'cancelling';
+      setApiResult(isServerJobRunning
+        ? { message: '브라우저 연결은 끊겼지만 서버에서 CSV 생성을 계속 진행 중입니다.' }
+        : { error: err instanceof TypeError ? '서버 연결이 끊겼습니다. 잠시 후 상태를 다시 확인해 주세요.' : (err instanceof Error ? err.message : '조회 중 오류가 발생했습니다.') });
     } finally {
       setIsLoading(false);
     }
