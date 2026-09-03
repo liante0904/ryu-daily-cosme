@@ -186,6 +186,13 @@ export function useKeywords() {
     if (keywords.length === 0) return;
     
     cancelRequestedRef.current = false;
+    setServerProgress({
+      status: 'running',
+      current: 0,
+      total: keywords.length,
+      keyword: '',
+      message: '데이터 수집을 시작했습니다.',
+    });
     setIsLoading(true);
     setApiResult(null);
     
