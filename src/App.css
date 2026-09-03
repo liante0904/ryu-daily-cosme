@@ -346,11 +346,22 @@ body {
 }
 
 .server-files-panel {
-  margin-bottom: 20px;
+  align-self: start;
   padding: 14px;
   background-color: var(--item-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
+}
+
+.list-content-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  gap: 20px;
+  align-items: start;
+}
+
+.keyword-list-column {
+  min-width: 0;
 }
 
 .server-files-header {
@@ -415,6 +426,12 @@ body {
 .server-files-empty {
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .list-content-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Keyword Items */

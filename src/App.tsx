@@ -224,80 +224,84 @@ function App() {
                 </div>
               </div>
 
-              <div className="server-files-panel">
-                <div className="server-files-header">
-                  <div>
-                    <h4>서버 저장 CSV</h4>
-                    <span>5분마다 자동 갱신 · 작업 완료 후 다시 접속해도 다운로드할 수 있습니다.</span>
-                  </div>
-                  <button className="text-btn" onClick={refreshServerFiles} title="파일 목록 새로고침">
-                    <RefreshCw size={14} /> 새로고침
-                  </button>
-                </div>
-                {serverFiles.length > 0 ? (
-                  <div className="server-file-list">
-                    {serverFiles.map((file) => (
-                      <button
-                        key={file.filename}
-                        className="server-file-item"
-                        onClick={() => downloadServerFile(file.filename)}
-                        title={`${file.filename} 다운로드`}
-                      >
-                        <Download size={15} />
-                        <span className="server-file-name">{file.filename}</span>
-                        <span className="server-file-date">
-                          {new Date(file.created_at * 1000).toLocaleString('ko-KR')}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="server-files-empty">저장된 CSV 파일이 없습니다.</div>
-                )}
-              </div>
+              <div className="list-content-layout">
+                <div className="keyword-list-column">
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <div className="keyword-list">
+                      <SortableContext items={keywords.map(k => k.id)} strategy={verticalListSortingStrategy}>
+                        {keywords.map((keyword) => (
+                          <SortableKeywordItem 
+                            key={keyword.id} keyword={keyword} onRemove={removeKeyword} onStartEdit={handleStartEdit}
+                            isEditing={editingId === keyword.id} editText={editText} setEditText={setEditText}
+                            onSaveEdit={handleSaveEdit} onCancelEdit={() => setEditingId(null)}
+                          />
+                        ))}
+                      </SortableContext>
+                      {keywords.length === 0 && (
+                        <div className="empty-state"><p>등록된 키워드가 없습니다.</p></div>
+                      )}
+                    </div>
+                  </DndContext>
 
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <div className="keyword-list">
-                  <SortableContext items={keywords.map(k => k.id)} strategy={verticalListSortingStrategy}>
-                    {keywords.map((keyword) => (
-                      <SortableKeywordItem 
-                        key={keyword.id} keyword={keyword} onRemove={removeKeyword} onStartEdit={handleStartEdit}
-                        isEditing={editingId === keyword.id} editText={editText} setEditText={setEditText}
-                        onSaveEdit={handleSaveEdit} onCancelEdit={() => setEditingId(null)}
-                      />
-                    ))}
-                  </SortableContext>
-                  {keywords.length === 0 && (
-                    <div className="empty-state"><p>등록된 키워드가 없습니다.</p></div>
+                  <div className="list-footer-action" style={{ opacity: isAtBottom ? 0 : 1, transition: 'opacity 0.5s' }}>
+                    <button 
+                      onClick={callMafiaApi} 
+                      className={`run-button ${isLoading ? 'loading' : ''}`}
+                      disabled={isLoading || keywords.length === 0}
+                    >
+                      {isLoading ? <span>조회 중...</span> : <><Search size={18} /> <span>키워드 검색량 조회하기</span></>}
+                    </button>
+                  </div>
+
+                  {(apiResult || isLoading) && (
+                    <div className="result-container" ref={resultRef}>
+                      <div className="result-header">
+                        <h4>💡 분석 결과</h4>
+                        {apiResult && <button onClick={() => setApiResult(null)} className="close-result">닫기</button>}
+                      </div>
+                      <div className="result-content">
+                        {isLoading ? (
+                          <div className="loading-spinner">데이터를 가져오는 중입니다...</div>
+                        ) : (
+                          <pre>{JSON.stringify(apiResult, null, 2)}</pre>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-              </DndContext>
 
-              <div className="list-footer-action" style={{ opacity: isAtBottom ? 0 : 1, transition: 'opacity 0.5s' }}>
-                <button 
-                  onClick={callMafiaApi} 
-                  className={`run-button ${isLoading ? 'loading' : ''}`}
-                  disabled={isLoading || keywords.length === 0}
-                >
-                  {isLoading ? <span>조회 중...</span> : <><Search size={18} /> <span>키워드 검색량 조회하기</span></>}
-                </button>
-              </div>
-
-              {(apiResult || isLoading) && (
-                <div className="result-container" ref={resultRef}>
-                  <div className="result-header">
-                    <h4>💡 분석 결과</h4>
-                    {apiResult && <button onClick={() => setApiResult(null)} className="close-result">닫기</button>}
+                <div className="server-files-panel">
+                  <div className="server-files-header">
+                    <div>
+                      <h4>서버 저장 CSV</h4>
+                      <span>5분마다 자동 갱신 · 작업 완료 후 다시 접속해도 다운로드할 수 있습니다.</span>
+                    </div>
+                    <button className="text-btn" onClick={refreshServerFiles} title="파일 목록 새로고침">
+                      <RefreshCw size={14} /> 새로고침
+                    </button>
                   </div>
-                  <div className="result-content">
-                    {isLoading ? (
-                      <div className="loading-spinner">데이터를 가져오는 중입니다...</div>
-                    ) : (
-                      <pre>{JSON.stringify(apiResult, null, 2)}</pre>
-                    )}
-                  </div>
+                  {serverFiles.length > 0 ? (
+                    <div className="server-file-list">
+                      {serverFiles.map((file) => (
+                        <button
+                          key={file.filename}
+                          className="server-file-item"
+                          onClick={() => downloadServerFile(file.filename)}
+                          title={`${file.filename} 다운로드`}
+                        >
+                          <Download size={15} />
+                          <span className="server-file-name">{file.filename}</span>
+                          <span className="server-file-date">
+                            {new Date(file.created_at * 1000).toLocaleString('ko-KR')}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="server-files-empty">저장된 CSV 파일이 없습니다.</div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </section>
         </main>
