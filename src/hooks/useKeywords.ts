@@ -87,6 +87,12 @@ export function useKeywords() {
       const response = await fetch(`${API_BASE_URL}/ryu/mapia/status/`);
       if (!response.ok) throw new Error('작업 상태 로딩 실패');
       const nextProgress = await response.json();
+      if (cancelRequestedRef.current && nextProgress.status === 'cancelled') {
+        cancelRequestedRef.current = false;
+        const idleProgress: ServerProgress = { status: 'idle', current: 0, total: 0, keyword: '', message: '' };
+        setServerProgress(idleProgress);
+        return idleProgress;
+      }
       setServerProgress(nextProgress);
       return nextProgress;
     } catch (err) {
@@ -102,7 +108,7 @@ export function useKeywords() {
       cancelRequestedRef.current = true;
       setIsLoading(false);
       setApiResult(null);
-      setServerProgress({ status: 'idle', current: 0, total: 0, keyword: '', message: '' });
+      setServerProgress({ ...serverProgress, status: 'cancelling', message: '중단 요청을 처리 중입니다.' });
     } catch (err) {
       console.error('생성 중단 요청 실패:', err);
       setApiResult({ error: '생성 중단 요청에 실패했습니다.' });
