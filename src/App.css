@@ -436,6 +436,31 @@ body {
   font-size: 11px;
 }
 
+.result-generation-status {
+  padding: 4px 0;
+}
+
+.result-generation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.result-generation-count {
+  margin-top: 12px;
+  color: var(--accent);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.result-generation-keyword {
+  overflow-wrap: anywhere;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
 .server-cancelled-message {
   color: var(--danger);
   font-weight: 600;

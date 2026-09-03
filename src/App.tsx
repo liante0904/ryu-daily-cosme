@@ -61,6 +61,8 @@ function App() {
     refreshServerProgress,
     cancelServerGeneration,
   } = useKeywords();
+  const isServerGenerating = isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
+  const isServerCancelling = serverProgress.status === 'cancelling';
 
   // Scroll Behavior Detection
   useEffect(() => {
@@ -257,15 +259,33 @@ function App() {
                     </button>
                   </div>
 
-                  {(apiResult || isLoading) && (
+              {(apiResult || isServerGenerating) && (
                     <div className="result-container" ref={resultRef}>
                       <div className="result-header">
                         <h4>💡 분석 결과</h4>
                         {apiResult && <button onClick={() => setApiResult(null)} className="close-result">닫기</button>}
                       </div>
                       <div className="result-content">
-                        {isLoading ? (
-                          <div className="loading-spinner">데이터를 가져오는 중입니다...</div>
+                        {isServerGenerating ? (
+                          <div className="result-generation-status">
+                            <div className="result-generation-header">
+                              <strong>CSV 생성 중</strong>
+                              <button
+                                className="text-btn cancel-btn"
+                                onClick={cancelServerGeneration}
+                                disabled={isServerCancelling}
+                              >
+                                {isServerCancelling ? '중단 처리 중' : '생성 중단'}
+                              </button>
+                            </div>
+                            <div className="result-generation-count">
+                              {serverProgress.total > 0 ? `${serverProgress.current} / ${serverProgress.total}` : '준비 중'}
+                            </div>
+                            <div className="result-generation-keyword">
+                              {serverProgress.keyword || '서버 작업을 시작하는 중입니다.'}
+                            </div>
+                            <div className="loading-spinner">데이터를 가져오는 중입니다...</div>
+                          </div>
                         ) : (
                           <pre>{JSON.stringify(apiResult, null, 2)}</pre>
                         )}
