@@ -384,6 +384,11 @@ body {
   flex: 1;
 }
 
+.server-files-header .text-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .server-files-header h4 {
   font-size: 14px;
   font-weight: 650;
