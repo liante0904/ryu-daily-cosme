@@ -4,13 +4,14 @@ import type { ServerCsvFile, ServerProgress } from '../hooks/useKeywords';
 type ServerCsvPanelProps = {
   files: ServerCsvFile[];
   progress: ServerProgress;
+  isRequestActive: boolean;
   onRefresh: () => void;
   onCancel: () => Promise<void>;
   onDownload: (filename: string) => void;
 };
 
-export function ServerCsvPanel({ files, progress, onRefresh, onCancel, onDownload }: ServerCsvPanelProps) {
-  const isRunning = progress.status === 'running' || progress.status === 'cancelling';
+export function ServerCsvPanel({ files, progress, isRequestActive, onRefresh, onCancel, onDownload }: ServerCsvPanelProps) {
+  const isRunning = isRequestActive || progress.status === 'running' || progress.status === 'cancelling';
   const isCancelling = progress.status === 'cancelling';
   const progressPercent = progress.total > 0
     ? Math.min(100, Math.round((progress.current / progress.total) * 100))
@@ -32,13 +33,13 @@ export function ServerCsvPanel({ files, progress, onRefresh, onCancel, onDownloa
           </div>
           {isCancelling && <div className="server-cancelling-message">중단 요청 전송됨 · 현재 요청이 끝나면 생성을 중단합니다.</div>}
           <div className="server-progress-count">
-            {progress.current} / {progress.total}
+            {progress.total > 0 ? `${progress.current} / ${progress.total}` : '준비 중'}
           </div>
-          <div className="server-progress-track" role="progressbar" aria-valuenow={progress.current} aria-valuemin={0} aria-valuemax={progress.total}>
+          <div className="server-progress-track" role="progressbar" aria-valuenow={progress.current} aria-valuemin={0} aria-valuemax={progress.total || 1}>
             <div className="server-progress-bar" style={{ width: `${progressPercent}%` }} />
           </div>
           <div className="server-progress-percent">{progressPercent}%</div>
-          <div className="server-progress-keyword">{progress.keyword || '준비 중'}</div>
+          <div className="server-progress-keyword">{progress.keyword || '서버 작업을 시작하는 중입니다.'}</div>
           <div className="server-progress-loading">데이터를 가져오는 중입니다...</div>
         </div>
       )}

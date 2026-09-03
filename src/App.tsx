@@ -277,6 +277,7 @@ function App() {
                 <ServerCsvPanel
                   files={serverFiles}
                   progress={serverProgress}
+                  isRequestActive={isLoading}
                   onRefresh={() => { refreshServerFiles(); refreshServerProgress(); }}
                   onCancel={cancelServerGeneration}
                   onDownload={downloadServerFile}
