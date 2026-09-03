@@ -32,12 +32,6 @@ export function ServerCsvPanel({ files, progress, isRequestActive, onRefresh, on
       {progress.status === 'completed' && progress.message && (
         <div className="server-progress-message">최근 생성 완료: {progress.message}</div>
       )}
-      {progress.status === 'cancelled' && (
-        <div className="server-progress-message server-cancelled-message">생성이 중단되었습니다. 새 CSV는 저장되지 않았습니다.</div>
-      )}
-      {progress.status === 'interrupted' && progress.message && (
-        <div className="server-progress-message server-cancelled-message">{progress.message}</div>
-      )}
       {files.length > 0 ? (
         <div className="server-file-list">
           {files.map((file) => (

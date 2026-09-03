@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Keyword } from '../components/KeywordItem';
 import type { ApiResult } from '../types';
 import { API_BASE_URL } from '../utils';
@@ -55,6 +55,7 @@ export function useKeywords() {
   const [serverProgress, setServerProgress] = useState<ServerProgress>({
     status: 'idle', current: 0, total: 0, keyword: '', message: '',
   });
+  const cancelRequestedRef = useRef(false);
 
   const refreshServerFiles = async () => {
     try {
@@ -98,7 +99,10 @@ export function useKeywords() {
     try {
       const response = await fetch(`${API_BASE_URL}/ryu/mapia/cancel/`, { method: 'POST' });
       if (!response.ok) throw new Error('생성 중단 요청 실패');
-      await refreshServerProgress();
+      cancelRequestedRef.current = true;
+      setIsLoading(false);
+      setApiResult(null);
+      setServerProgress({ status: 'idle', current: 0, total: 0, keyword: '', message: '' });
     } catch (err) {
       console.error('생성 중단 요청 실패:', err);
       setApiResult({ error: '생성 중단 요청에 실패했습니다.' });
@@ -175,6 +179,7 @@ export function useKeywords() {
   const callMafiaApi = async () => {
     if (keywords.length === 0) return;
     
+    cancelRequestedRef.current = false;
     setIsLoading(true);
     setApiResult(null);
     
@@ -204,6 +209,7 @@ export function useKeywords() {
       });
     } catch (err) {
       console.error('API 에러:', err);
+      if (cancelRequestedRef.current) return;
       const latestStatus = await refreshServerProgress();
       const isServerJobRunning = latestStatus?.status === 'running' || latestStatus?.status === 'cancelling';
       setApiResult(isServerJobRunning
