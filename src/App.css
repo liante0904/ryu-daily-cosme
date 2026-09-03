@@ -372,6 +372,22 @@ body {
   color: var(--danger);
 }
 
+.cancel-btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.server-cancelling-message {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  color: var(--danger);
+  background: rgba(255, 59, 48, 0.08);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .server-progress-count {
   color: var(--accent);
   font-size: 22px;
@@ -408,10 +424,21 @@ body {
   font-size: 12px;
 }
 
+.server-progress-loading {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .server-progress-message {
   margin-bottom: 10px;
   color: var(--text-secondary);
   font-size: 11px;
+}
+
+.server-cancelled-message {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 .list-content-layout {
@@ -460,7 +487,8 @@ body {
   margin-top: 2px;
   color: var(--text-secondary);
   font-size: 11px;
-  white-space: nowrap;
+  line-height: 1.35;
+  white-space: normal;
 }
 
 .server-file-list {
