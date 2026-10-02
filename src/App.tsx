@@ -63,6 +63,10 @@ function App() {
     cancelServerGeneration,
   } = useKeywords();
   const isServerGenerating = isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
+  const hasGenerationStatus = isServerGenerating
+    || serverProgress.status === 'completed'
+    || serverProgress.status === 'cancelled'
+    || serverProgress.status === 'unknown';
 
   // Scroll Behavior Detection
   useEffect(() => {
@@ -153,12 +157,6 @@ function App() {
     }
   }, [isBulkMode, bulkInput, singleInput]);
 
-  useEffect(() => {
-    if (isLoading || apiResult) {
-      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-    }
-  }, [isLoading, apiResult]);
-
   return (
     <>
       <div className="app-container">
@@ -199,6 +197,29 @@ function App() {
                   <Plus size={18} /> {isBulkMode ? '일괄 추가' : '추가'}
                 </button>
               </div>
+
+              {(hasGenerationStatus || apiResult) && (
+                <div className="result-container result-container-inline" ref={resultRef}>
+                  <div className="result-header">
+                    <h4>💡 조회 상태</h4>
+                    {apiResult && !isServerGenerating && <button onClick={() => setApiResult(null)} className="close-result">닫기</button>}
+                  </div>
+                  <div className="result-content">
+                    {hasGenerationStatus ? (
+                      <GenerationProgress
+                        progress={serverProgress}
+                        isRequestActive={isLoading}
+                        onCancel={cancelServerGeneration}
+                      />
+                    ) : apiResult ? (
+                      <div className={apiResult.error ? 'status-message error' : 'status-message success'}>
+                        {String(apiResult.error || apiResult.message || '')}
+                        {typeof apiResult.filename === 'string' && <span className="status-detail">파일: {apiResult.filename}</span>}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="list-container">
@@ -259,21 +280,6 @@ function App() {
                     </button>
                   </div>
 
-              {(apiResult || isServerGenerating) && (
-                    <div className="result-container" ref={resultRef}>
-                      <div className="result-header">
-                        <h4>💡 분석 결과</h4>
-                        {apiResult && <button onClick={() => setApiResult(null)} className="close-result">닫기</button>}
-                      </div>
-                      <div className="result-content">
-                        {isServerGenerating ? (
-                          <GenerationProgress progress={serverProgress} isRequestActive={isLoading} onCancel={cancelServerGeneration} compact />
-                        ) : (
-                          <pre>{JSON.stringify(apiResult, null, 2)}</pre>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <ServerCsvPanel

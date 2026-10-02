@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Keyword } from '../components/KeywordItem';
 import type { ApiResult } from '../types';
 import { API_BASE_URL } from '../utils';
@@ -56,8 +56,9 @@ export function useKeywords() {
     status: 'idle', current: 0, total: 0, keyword: '', message: '',
   });
   const cancelRequestedRef = useRef(false);
+  const previousProgressStatusRef = useRef(serverProgress.status);
 
-  const refreshServerFiles = async () => {
+  const refreshServerFiles = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/ryu/mapia/files/`);
       if (!response.ok) throw new Error('서버 파일 목록 로딩 실패');
@@ -66,7 +67,7 @@ export function useKeywords() {
     } catch (err) {
       console.error('서버 파일 목록 로딩 실패:', err);
     }
-  };
+  }, []);
 
   const downloadServerFile = async (filename: string) => {
     try {
@@ -82,7 +83,7 @@ export function useKeywords() {
     }
   };
 
-  const refreshServerProgress = async (): Promise<ServerProgress | null> => {
+  const refreshServerProgress = useCallback(async (): Promise<ServerProgress | null> => {
     try {
       const response = await fetch(`${API_BASE_URL}/ryu/mapia/status/`);
       if (!response.ok) throw new Error('작업 상태 로딩 실패');
@@ -93,13 +94,21 @@ export function useKeywords() {
         setServerProgress(idleProgress);
         return idleProgress;
       }
+      if (nextProgress.status === 'running') {
+        previousProgressStatusRef.current = 'running';
+      }
+      if (nextProgress.status === 'completed' && previousProgressStatusRef.current !== 'completed') {
+        // 서버가 파일을 완성한 직후 목록에도 바로 표시되도록 갱신합니다.
+        await refreshServerFiles();
+      }
+      previousProgressStatusRef.current = nextProgress.status;
       setServerProgress(nextProgress);
       return nextProgress;
     } catch (err) {
       console.error('작업 상태 로딩 실패:', err);
       return null;
     }
-  };
+  }, [refreshServerFiles]);
 
   const cancelServerGeneration = async () => {
     try {
@@ -117,16 +126,18 @@ export function useKeywords() {
 
   useEffect(() => {
     refreshServerFiles();
-    const interval = window.setInterval(refreshServerFiles, 5 * 60 * 1000);
+    const isGenerating = isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
+    // 생성 중에는 새 파일을 빠르게 반영하고, 대기 중에도 목록이 오래된 상태로 남지 않게 합니다.
+    const interval = window.setInterval(refreshServerFiles, isGenerating ? 2000 : 30 * 1000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [isLoading, serverProgress.status, refreshServerFiles]);
 
   useEffect(() => {
     refreshServerProgress();
     const isMonitoring = isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
-    const interval = window.setInterval(refreshServerProgress, isMonitoring ? 5000 : 5 * 60 * 1000);
+    const interval = window.setInterval(refreshServerProgress, isMonitoring ? 2000 : 5 * 60 * 1000);
     return () => window.clearInterval(interval);
-  }, [isLoading, serverProgress.status]);
+  }, [isLoading, serverProgress.status, refreshServerProgress]);
 
   // Initial Data Fetch (History)
   useEffect(() => {
@@ -193,6 +204,7 @@ export function useKeywords() {
       keyword: '',
       message: '데이터 수집을 시작했습니다.',
     });
+    previousProgressStatusRef.current = 'running';
     setIsLoading(true);
     setApiResult(null);
     
@@ -215,9 +227,11 @@ export function useKeywords() {
       const filename = extractFilename(contentDisposition) || `더샘_키워드_결과_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '')}.csv`;
       const blob = await response.blob();
       triggerBrowserDownload(blob, filename);
+      await refreshServerFiles();
+      await refreshServerProgress();
 
       setApiResult({
-        message: 'CSV 파일 다운로드를 시작했습니다.',
+        message: 'CSV 생성이 완료되어 브라우저 다운로드를 시작했습니다.',
         filename,
       });
     } catch (err) {
