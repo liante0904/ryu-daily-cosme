@@ -36,7 +36,7 @@ export function GenerationProgress({ progress, isRequestActive = false, onCancel
   const title = isGenerating ? (isCancelling ? '생성 중단 처리 중' : 'CSV 생성 중')
     : isCompleted ? 'CSV 생성 완료' : isCancelled ? 'CSV 생성 취소됨' : '생성 상태 확인 필요';
   const detail = isGenerating
-    ? (progress.keyword ? `현재 조회 중: ${progress.keyword}` : '서버 작업을 시작하는 중입니다.')
+    ? (progress.keyword ? `현재 조회 중: ${progress.keyword}` : progress.message || '서버 작업을 시작하는 중입니다.')
     : (isCompleted
       ? `${progress.message || 'CSV 파일이 생성되었습니다.'} · 오른쪽 서버 저장 CSV 목록에 반영되었습니다.`
       : progress.message || (isCancelled ? '사용자가 생성을 중단했습니다.' : '서버 상태를 확인해 주세요.'));
@@ -59,7 +59,9 @@ export function GenerationProgress({ progress, isRequestActive = false, onCancel
         </button>}
       </div>
       <div className="generation-progress-count">
-        {progress.total > 0 ? `${progress.current} / ${progress.total}개 키워드` : '서버 준비 중'}
+        {progress.total > 0
+          ? progress.current > 0 ? `${progress.current} / ${progress.total}개 키워드` : '기본 검색량 수집 중'
+          : '서버 준비 중'}
       </div>
       {!compact && isGenerating && <div className="server-progress-track" role="progressbar" aria-valuenow={progress.current} aria-valuemin={0} aria-valuemax={progress.total || 1}>
         <div className="server-progress-bar" style={{ width: `${percent}%` }} />
