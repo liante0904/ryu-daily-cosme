@@ -22,6 +22,10 @@ export function GenerationProgress({ progress, isRequestActive = false, onCancel
   const startedAtRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [progressReceivedAt, setProgressReceivedAt] = useState(Date.now());
+  useEffect(() => {
+    setProgressReceivedAt(Date.now());
+  }, [progress.updated_at, progress.estimated_remaining_seconds, progress.wait_remaining_seconds]);
   useEffect(() => {
     if (!isGenerating) return;
     if (startedAtRef.current === null) startedAtRef.current = Date.now();
@@ -44,14 +48,23 @@ export function GenerationProgress({ progress, isRequestActive = false, onCancel
       ? `${progress.message || 'CSV 파일이 생성되었습니다.'} · 오른쪽 서버 저장 CSV 목록에 반영되었습니다.`
       : progress.message || (isCancelled ? '사용자가 생성을 중단했습니다.' : '서버 상태를 확인해 주세요.'));
   const elapsedLabel = `${Math.floor(elapsedSeconds / 60)}분 ${String(elapsedSeconds % 60).padStart(2, '0')}초 경과`;
-  const hasEstimate = isGenerating && overallTotal > 0 && overallCurrent > 0 && overallCurrent < overallTotal;
-  const remainingSeconds = hasEstimate
-    ? Math.ceil((elapsedSeconds / overallCurrent) * (overallTotal - overallCurrent))
-    : 0;
+  const hasServerEstimate = typeof progress.estimated_remaining_seconds === 'number';
+  const hasEstimate = isGenerating && (hasServerEstimate || (overallTotal > 0 && overallCurrent > 0 && overallCurrent < overallTotal));
+  const progressAgeSeconds = currentTime > 0 ? Math.max(0, (currentTime - progressReceivedAt) / 1000) : 0;
+  const remainingSeconds = hasServerEstimate
+    ? Math.max(0, Math.ceil(progress.estimated_remaining_seconds! - progressAgeSeconds))
+    : hasEstimate
+      ? Math.ceil((elapsedSeconds / overallCurrent) * (overallTotal - overallCurrent))
+      : 0;
   const expectedTime = hasEstimate && currentTime > 0 ? new Date(currentTime + remainingSeconds * 1000) : null;
-  const expectedLabel = expectedTime
+  const formatDuration = (seconds: number) => `${Math.floor(seconds / 60)}분 ${String(seconds % 60).padStart(2, '0')}초`;
+  const expectedDownloadLabel = expectedTime
     ? `예상 다운로드 가능: 약 ${Math.max(1, Math.ceil(remainingSeconds / 60))}분 후 (${expectedTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})`
-    : isGenerating ? '첫 키워드 처리 후 예상 다운로드 시간을 계산합니다.' : '';
+    : hasEstimate ? 'CSV 저장을 마무리하고 있습니다.' : '처리 속도를 확인해 예상 시간을 계산하고 있습니다.';
+  const waitRemainingSeconds = Math.max(0, (progress.wait_remaining_seconds ?? 0) - progressAgeSeconds);
+  const expectedLabel = progress.phase === 'batch_wait'
+    ? `다음 배치까지 ${formatDuration(waitRemainingSeconds)} 대기 · ${expectedDownloadLabel}`
+    : expectedDownloadLabel;
 
   return (
     <div className={compact ? 'generation-progress generation-progress-compact' : 'generation-progress'}>
@@ -63,7 +76,7 @@ export function GenerationProgress({ progress, isRequestActive = false, onCancel
       </div>
       <div className="generation-progress-count">
         {phaseTotal > 0
-          ? `${phaseCurrent} / ${phaseTotal}개 키워드 · ${progress.phase === 'detail' ? '상세 조회' : progress.phase === 'basic' ? '기본 검색량' : 'CSV 처리'}`
+          ? `${phaseCurrent} / ${phaseTotal}개 키워드 · ${progress.phase === 'detail' ? '상세 조회' : progress.phase === 'basic' ? '기본 검색량' : progress.phase === 'batch_wait' ? '배치 간 대기' : 'CSV 처리'}${progress.batch_total ? ` · ${progress.batch_current ?? 0}/${progress.batch_total} 배치` : ''}`
           : '서버 준비 중'}
       </div>
       {!compact && isGenerating && <div className="server-progress-track" role="progressbar" aria-valuenow={overallCurrent} aria-valuemin={0} aria-valuemax={overallTotal || 1}>

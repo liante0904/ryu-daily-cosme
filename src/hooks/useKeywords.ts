@@ -20,6 +20,11 @@ export type ServerProgress = {
   phase_total?: number;
   overall_current?: number;
   overall_total?: number;
+  batch_current?: number;
+  batch_total?: number;
+  wait_remaining_seconds?: number;
+  estimated_remaining_seconds?: number | null;
+  updated_at?: number;
 };
 
 const extractFilename = (contentDisposition: string | null) => {
