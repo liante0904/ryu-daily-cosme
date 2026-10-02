@@ -64,6 +64,7 @@ export function useKeywords() {
   const cancelRequestedRef = useRef(false);
   const previousProgressStatusRef = useRef(serverProgress.status);
   const generationRunIdRef = useRef(0);
+  const generationRequestActiveRef = useRef(false);
 
   const refreshServerFiles = useCallback(async () => {
     try {
@@ -203,8 +204,9 @@ export function useKeywords() {
   };
 
   const callMafiaApi = async () => {
-    if (keywords.length === 0) return;
+    if (keywords.length === 0 || generationRequestActiveRef.current) return;
     
+    generationRequestActiveRef.current = true;
     generationRunIdRef.current += 1;
     setHasGenerationRun(true);
     cancelRequestedRef.current = false;
@@ -255,6 +257,7 @@ export function useKeywords() {
         : { error: err instanceof TypeError ? '서버 연결이 끊겼습니다. 잠시 후 상태를 다시 확인해 주세요.' : (err instanceof Error ? err.message : '조회 중 오류가 발생했습니다.') });
     } finally {
       setIsLoading(false);
+      generationRequestActiveRef.current = false;
     }
   };
 
