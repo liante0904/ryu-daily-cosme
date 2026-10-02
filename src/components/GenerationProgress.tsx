@@ -12,10 +12,13 @@ type GenerationProgressProps = {
 export function GenerationProgress({ progress, isRequestActive = false, onCancel, compact = false }: GenerationProgressProps) {
   const isGenerating = isRequestActive || progress.status === 'running' || progress.status === 'cancelling';
   const isCancelling = progress.status === 'cancelling';
-  const percent = progress.total > 0 ? Math.min(100, Math.round((progress.current / progress.total) * 100)) : 0;
   const isCompleted = progress.status === 'completed';
   const isCancelled = progress.status === 'cancelled';
   const isUnknown = progress.status === 'unknown';
+  const phaseCurrent = progress.phase_current ?? progress.current;
+  const phaseTotal = progress.phase_total ?? progress.total;
+  const overallCurrent = progress.overall_current ?? phaseCurrent;
+  const overallTotal = progress.overall_total ?? phaseTotal;
   const startedAtRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -41,9 +44,9 @@ export function GenerationProgress({ progress, isRequestActive = false, onCancel
       ? `${progress.message || 'CSV 파일이 생성되었습니다.'} · 오른쪽 서버 저장 CSV 목록에 반영되었습니다.`
       : progress.message || (isCancelled ? '사용자가 생성을 중단했습니다.' : '서버 상태를 확인해 주세요.'));
   const elapsedLabel = `${Math.floor(elapsedSeconds / 60)}분 ${String(elapsedSeconds % 60).padStart(2, '0')}초 경과`;
-  const hasEstimate = isGenerating && progress.total > 0 && progress.current > 0 && progress.current < progress.total;
+  const hasEstimate = isGenerating && overallTotal > 0 && overallCurrent > 0 && overallCurrent < overallTotal;
   const remainingSeconds = hasEstimate
-    ? Math.ceil((elapsedSeconds / progress.current) * (progress.total - progress.current))
+    ? Math.ceil((elapsedSeconds / overallCurrent) * (overallTotal - overallCurrent))
     : 0;
   const expectedTime = hasEstimate && currentTime > 0 ? new Date(currentTime + remainingSeconds * 1000) : null;
   const expectedLabel = expectedTime
@@ -59,14 +62,14 @@ export function GenerationProgress({ progress, isRequestActive = false, onCancel
         </button>}
       </div>
       <div className="generation-progress-count">
-        {progress.total > 0
-          ? progress.current > 0 ? `${progress.current} / ${progress.total}개 키워드` : '기본 검색량 수집 중'
+        {phaseTotal > 0
+          ? `${phaseCurrent} / ${phaseTotal}개 키워드 · ${progress.phase === 'detail' ? '상세 조회' : progress.phase === 'basic' ? '기본 검색량' : 'CSV 처리'}`
           : '서버 준비 중'}
       </div>
-      {!compact && isGenerating && <div className="server-progress-track" role="progressbar" aria-valuenow={progress.current} aria-valuemin={0} aria-valuemax={progress.total || 1}>
-        <div className="server-progress-bar" style={{ width: `${percent}%` }} />
+      {!compact && isGenerating && <div className="server-progress-track" role="progressbar" aria-valuenow={overallCurrent} aria-valuemin={0} aria-valuemax={overallTotal || 1}>
+        <div className="server-progress-bar" style={{ width: `${overallTotal > 0 ? Math.min(100, Math.round((overallCurrent / overallTotal) * 100)) : 0}%` }} />
       </div>}
-      {!compact && isGenerating && <div className="server-progress-percent">{percent}%</div>}
+      {!compact && isGenerating && <div className="server-progress-percent">전체 단계 {overallCurrent} / {overallTotal} · {overallTotal > 0 ? Math.min(100, Math.round((overallCurrent / overallTotal) * 100)) : 0}%</div>}
       <div className="generation-progress-keyword">{detail}</div>
       {(isGenerating || isCompleted) && <div className="generation-progress-elapsed">{elapsedLabel}</div>}
       {isGenerating && <div className="generation-progress-eta">{expectedLabel}</div>}

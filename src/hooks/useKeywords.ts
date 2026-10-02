@@ -15,6 +15,11 @@ export type ServerProgress = {
   total: number;
   keyword: string;
   message: string;
+  phase?: string;
+  phase_current?: number;
+  phase_total?: number;
+  overall_current?: number;
+  overall_total?: number;
 };
 
 const extractFilename = (contentDisposition: string | null) => {
