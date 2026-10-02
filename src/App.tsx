@@ -59,14 +59,15 @@ function App() {
     refreshServerFiles,
     downloadServerFile,
     serverProgress,
+    hasGenerationRun,
     refreshServerProgress,
     cancelServerGeneration,
   } = useKeywords();
   const isServerGenerating = isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
-  const hasGenerationStatus = isServerGenerating
+  const hasGenerationStatus = hasGenerationRun && (isServerGenerating
     || serverProgress.status === 'completed'
     || serverProgress.status === 'cancelled'
-    || serverProgress.status === 'unknown';
+    || serverProgress.status === 'unknown');
 
   // Scroll Behavior Detection
   useEffect(() => {
@@ -285,6 +286,7 @@ function App() {
                 <ServerCsvPanel
                   files={serverFiles}
                   progress={serverProgress}
+                  hasGenerationRun={hasGenerationRun}
                   isRequestActive={isLoading}
                   onRefresh={() => { refreshServerFiles(); refreshServerProgress(); }}
                   onCancel={cancelServerGeneration}

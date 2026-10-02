@@ -55,8 +55,10 @@ export function useKeywords() {
   const [serverProgress, setServerProgress] = useState<ServerProgress>({
     status: 'idle', current: 0, total: 0, keyword: '', message: '',
   });
+  const [hasGenerationRun, setHasGenerationRun] = useState(false);
   const cancelRequestedRef = useRef(false);
   const previousProgressStatusRef = useRef(serverProgress.status);
+  const generationRunIdRef = useRef(0);
 
   const refreshServerFiles = useCallback(async () => {
     try {
@@ -84,15 +86,17 @@ export function useKeywords() {
   };
 
   const refreshServerProgress = useCallback(async (): Promise<ServerProgress | null> => {
+    const requestRunId = generationRunIdRef.current;
     try {
       const response = await fetch(`${API_BASE_URL}/ryu/mapia/status/`);
       if (!response.ok) throw new Error('작업 상태 로딩 실패');
       const nextProgress = await response.json();
+      // 조회 시작 전에 발송된 오래된 상태 응답이 새 실행 상태를 덮어쓰지 않게 합니다.
+      if (requestRunId !== generationRunIdRef.current) return null;
       if (cancelRequestedRef.current && nextProgress.status === 'cancelled') {
         cancelRequestedRef.current = false;
-        const idleProgress: ServerProgress = { status: 'idle', current: 0, total: 0, keyword: '', message: '' };
-        setServerProgress(idleProgress);
-        return idleProgress;
+        setServerProgress(nextProgress);
+        return nextProgress;
       }
       if (nextProgress.status === 'running') {
         previousProgressStatusRef.current = 'running';
@@ -196,6 +200,8 @@ export function useKeywords() {
   const callMafiaApi = async () => {
     if (keywords.length === 0) return;
     
+    generationRunIdRef.current += 1;
+    setHasGenerationRun(true);
     cancelRequestedRef.current = false;
     setServerProgress({
       status: 'running',
@@ -262,6 +268,7 @@ export function useKeywords() {
     refreshServerFiles,
     downloadServerFile,
     serverProgress,
+    hasGenerationRun,
     refreshServerProgress,
     cancelServerGeneration,
   };

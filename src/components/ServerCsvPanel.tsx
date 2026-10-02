@@ -6,13 +6,14 @@ type ServerCsvPanelProps = {
   files: ServerCsvFile[];
   progress: ServerProgress;
   isRequestActive: boolean;
+  hasGenerationRun: boolean;
   onRefresh: () => void;
   onCancel: () => Promise<void>;
   onDownload: (filename: string) => void;
 };
 
-export function ServerCsvPanel({ files, progress, isRequestActive, onRefresh, onCancel, onDownload }: ServerCsvPanelProps) {
-  const isRunning = isRequestActive || progress.status === 'running' || progress.status === 'cancelling';
+export function ServerCsvPanel({ files, progress, isRequestActive, hasGenerationRun, onRefresh, onCancel, onDownload }: ServerCsvPanelProps) {
+  const isRunning = hasGenerationRun && (isRequestActive || progress.status === 'running' || progress.status === 'cancelling');
   const isToday = (createdAt: number) => {
     const date = new Date(createdAt * 1000);
     const today = new Date();
@@ -34,7 +35,7 @@ export function ServerCsvPanel({ files, progress, isRequestActive, onRefresh, on
           <RefreshCw size={14} /> 새로고침
         </button>
       </div>
-      {progress.status === 'completed' && progress.message && (
+      {hasGenerationRun && progress.status === 'completed' && progress.message && (
         <div className="server-progress-message">최근 생성 완료 · 오른쪽 목록에 저장됨: {progress.message}</div>
       )}
       {files.length > 0 ? (
