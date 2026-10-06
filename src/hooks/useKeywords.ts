@@ -27,25 +27,6 @@ export type ServerProgress = {
   updated_at?: number;
 };
 
-const extractFilename = (contentDisposition: string | null) => {
-  if (!contentDisposition) return null;
-
-  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-  if (utf8Match?.[1]) {
-    try {
-      return decodeURIComponent(utf8Match[1]);
-    } catch {
-      return utf8Match[1];
-    }
-  }
-
-  const quotedMatch = contentDisposition.match(/filename="([^"]+)"/i);
-  if (quotedMatch?.[1]) return quotedMatch[1];
-
-  const plainMatch = contentDisposition.match(/filename=([^;]+)/i);
-  return plainMatch?.[1]?.trim() || null;
-};
-
 const triggerBrowserDownload = (blob: Blob, filename: string) => {
   const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
@@ -82,7 +63,7 @@ export function useKeywords() {
     }
   }, []);
 
-  const downloadServerFile = async (filename: string) => {
+  const downloadServerFile = async (filename: string): Promise<boolean> => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/ryu/mapia/files/${encodeURIComponent(filename)}`
@@ -90,9 +71,11 @@ export function useKeywords() {
       if (!response.ok) throw new Error('파일 다운로드 실패');
       const blob = await response.blob();
       triggerBrowserDownload(blob, filename);
+      return true;
     } catch (err) {
       console.error('서버 파일 다운로드 실패:', err);
       setApiResult({ error: '파일 다운로드에 실패했습니다.' });
+      return false;
     }
   };
 
@@ -241,12 +224,34 @@ export function useKeywords() {
         throw new Error(errorBody.detail || errorBody.message || 'API 호출 실패');
       }
 
-      const contentDisposition = response.headers.get('content-disposition');
-      const filename = extractFilename(contentDisposition) || `더샘_키워드_결과_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '')}.csv`;
-      const blob = await response.blob();
-      triggerBrowserDownload(blob, filename);
+      const accepted = await response.json();
+      if (accepted.status !== 'accepted') {
+        throw new Error(accepted.detail || accepted.message || '조회 작업을 시작하지 못했습니다.');
+      }
+
+      // POST returns 202 JSON; wait for the background CSV job and download its actual file.
+      let completedProgress: ServerProgress | null = null;
+      while (!cancelRequestedRef.current) {
+        await new Promise(resolve => window.setTimeout(resolve, 2000));
+        const progress = await refreshServerProgress();
+        if (!progress) continue;
+        if (progress.status === 'completed') {
+          completedProgress = progress;
+          break;
+        }
+        if (['failed', 'interrupted', 'cancelled'].includes(progress.status)) {
+          throw new Error(progress.message || 'CSV 생성이 완료되지 않았습니다.');
+        }
+      }
+      if (cancelRequestedRef.current) return;
+
+      const filename = completedProgress?.message;
+      if (!filename || !filename.toLowerCase().endsWith('.csv')) {
+        throw new Error('CSV 생성은 완료됐지만 파일명을 확인할 수 없습니다. 서버 파일 목록을 새로고침해 주세요.');
+      }
+      const downloaded = await downloadServerFile(filename);
       await refreshServerFiles();
-      await refreshServerProgress();
+      if (!downloaded) throw new Error('CSV 파일 다운로드에 실패했습니다. 서버 파일 목록에서 다시 받아 주세요.');
 
       setApiResult({
         message: 'CSV 생성이 완료되어 브라우저 다운로드를 시작했습니다.',
