@@ -29,6 +29,7 @@ import type { Keyword } from './components/KeywordItem';
 // Hooks
 import { useTheme } from './hooks/useTheme';
 import { useKeywords } from './hooks/useKeywords';
+import { useScrollVisibility } from './hooks/useScrollVisibility';
 
 // Types & Utils
 import { adjustHeight } from './utils';
@@ -36,10 +37,7 @@ import { adjustHeight } from './utils';
 function App() {
   // UI Hooks
   const { isDarkMode, toggleTheme } = useTheme();
-  // Removed: const isAtTop = useScrollAtTop(10);
-  const [isAtBottom, setIsAtBottom] = useState(false);
-  const [showFloating, setShowFloating] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const { isAtBottom, showFloating } = useScrollVisibility();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isBulkMode, setIsBulkMode] = useState(false);
 
@@ -68,30 +66,6 @@ function App() {
     || serverProgress.status === 'completed'
     || serverProgress.status === 'cancelled'
     || serverProgress.status === 'unknown');
-
-  // Scroll Behavior Detection
-  useEffect(() => {
-    const handleScroll = () => {
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      
-      setIsAtBottom(scrollTop + windowHeight >= documentHeight - 100);
-
-      if (scrollTop < 10) {
-        setShowFloating(true);
-      } else if (scrollTop > lastScrollY) {
-        setShowFloating(false);
-      } else if (scrollTop < lastScrollY - 5) {
-        setShowFloating(true);
-      }
-
-      setLastScrollY(scrollTop);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
 
   // Input Data States
   const [singleInput, setSingleInput] = useState('');

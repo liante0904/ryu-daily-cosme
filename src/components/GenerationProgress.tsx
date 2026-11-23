@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Square } from 'lucide-react';
-import type { ServerProgress } from '../hooks/useKeywords';
+import type { ServerProgress } from '../types';
+import { formatDuration } from '../utils';
 
 type GenerationProgressProps = {
   progress: ServerProgress;
@@ -20,19 +21,23 @@ export function GenerationProgress({ progress, isRequestActive = false, onCancel
   const overallCurrent = progress.overall_current ?? phaseCurrent;
   const overallTotal = progress.overall_total ?? phaseTotal;
   const startedAtRef = useRef<number | null>(null);
+  const progressReceivedAtRef = useRef(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [progressReceivedAt, setProgressReceivedAt] = useState(Date.now());
+  const [progressAgeSeconds, setProgressAgeSeconds] = useState(0);
   useEffect(() => {
-    setProgressReceivedAt(Date.now());
+    progressReceivedAtRef.current = Date.now();
   }, [progress.updated_at, progress.estimated_remaining_seconds, progress.wait_remaining_seconds]);
   useEffect(() => {
     if (!isGenerating) return;
-    if (startedAtRef.current === null) startedAtRef.current = Date.now();
+    const initialNow = Date.now();
+    if (startedAtRef.current === null) startedAtRef.current = initialNow;
+    if (progressReceivedAtRef.current === 0) progressReceivedAtRef.current = initialNow;
     const updateElapsed = () => {
       const now = Date.now();
       setCurrentTime(now);
       setElapsedSeconds(Math.floor((now - (startedAtRef.current || now)) / 1000));
+      setProgressAgeSeconds(Math.max(0, (now - progressReceivedAtRef.current) / 1000));
     };
     updateElapsed();
     const interval = window.setInterval(updateElapsed, 1000);
@@ -50,14 +55,12 @@ export function GenerationProgress({ progress, isRequestActive = false, onCancel
   const elapsedLabel = `${Math.floor(elapsedSeconds / 60)}분 ${String(elapsedSeconds % 60).padStart(2, '0')}초 경과`;
   const hasServerEstimate = typeof progress.estimated_remaining_seconds === 'number';
   const hasEstimate = isGenerating && (hasServerEstimate || (overallTotal > 0 && overallCurrent > 0 && overallCurrent < overallTotal));
-  const progressAgeSeconds = currentTime > 0 ? Math.max(0, (currentTime - progressReceivedAt) / 1000) : 0;
   const remainingSeconds = hasServerEstimate
     ? Math.max(0, Math.ceil(progress.estimated_remaining_seconds! - progressAgeSeconds))
     : hasEstimate
       ? Math.ceil((elapsedSeconds / overallCurrent) * (overallTotal - overallCurrent))
       : 0;
   const expectedTime = hasEstimate && currentTime > 0 ? new Date(currentTime + remainingSeconds * 1000) : null;
-  const formatDuration = (seconds: number) => `${Math.floor(seconds / 60)}분 ${String(seconds % 60).padStart(2, '0')}초`;
   const expectedDownloadLabel = expectedTime
     ? `예상 다운로드 가능: 약 ${Math.max(1, Math.ceil(remainingSeconds / 60))}분 후 (${expectedTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})`
     : hasEstimate ? 'CSV 저장을 마무리하고 있습니다.' : '처리 속도를 확인해 예상 시간을 계산하고 있습니다.';
