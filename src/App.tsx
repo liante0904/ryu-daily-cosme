@@ -171,7 +171,7 @@ function App() {
         <Sidebar isOpen={isMenuOpen} toggleMenu={() => setIsMenuOpen(false)} />
 
         <main className="main-content">
-          <section className="dashboard-section">
+          <section className="dashboard-section" id="mafia">
             <div className="section-header">
               <h1>마피아 (네이버 키워드 검색량)</h1>
               <p className="subtitle">키워드를 관리하고 검색량을 분석하세요.</p>
