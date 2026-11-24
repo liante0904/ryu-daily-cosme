@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  downloadServerFileBlob,
-  fetchServerFiles,
   fetchServerProgress,
   requestCancelGeneration,
   startGeneration,
 } from '../api/mapiaApi';
-import type { ApiResult, ServerCsvFile, ServerProgress } from '../types';
-import { triggerBrowserDownload } from '../utils';
+import type { ApiResult, ServerProgress } from '../types';
+import { useServerFiles } from './useServerFiles';
 
 const INITIAL_PROGRESS: ServerProgress = {
   status: 'idle',
@@ -18,12 +16,11 @@ const INITIAL_PROGRESS: ServerProgress = {
 };
 
 /**
- * Manage server-side CSV generation lifecycle, polling, cancellation, and downloads.
+ * Manage server-side CSV generation lifecycle, progress polling, and cancellation.
  */
 export function useServerGeneration() {
   const [apiResult, setApiResult] = useState<ApiResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [serverFiles, setServerFiles] = useState<ServerCsvFile[]>([]);
   const [serverProgress, setServerProgress] = useState<ServerProgress>(INITIAL_PROGRESS);
   const [hasGenerationRun, setHasGenerationRun] = useState(false);
 
@@ -32,26 +29,17 @@ export function useServerGeneration() {
   const generationRunIdRef = useRef(0);
   const generationRequestActiveRef = useRef(false);
 
-  const refreshServerFiles = useCallback(async () => {
-    try {
-      const files = await fetchServerFiles();
-      setServerFiles(files);
-    } catch (err) {
-      console.error('서버 파일 목록 로딩 실패:', err);
-    }
+  const isMonitoring =
+    isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
+
+  const handleDownloadError = useCallback((message: string) => {
+    setApiResult({ error: message });
   }, []);
 
-  const downloadServerFile = useCallback(async (filename: string): Promise<boolean> => {
-    try {
-      const blob = await downloadServerFileBlob(filename);
-      triggerBrowserDownload(blob, filename);
-      return true;
-    } catch (err) {
-      console.error('서버 파일 다운로드 실패:', err);
-      setApiResult({ error: '파일 다운로드에 실패했습니다.' });
-      return false;
-    }
-  }, []);
+  const { serverFiles, refreshServerFiles, downloadServerFile } = useServerFiles(
+    isMonitoring,
+    handleDownloadError
+  );
 
   const refreshServerProgress = useCallback(async (): Promise<ServerProgress | null> => {
     const requestRunId = generationRunIdRef.current;
@@ -98,21 +86,10 @@ export function useServerGeneration() {
   }, []);
 
   useEffect(() => {
-    refreshServerFiles();
-    const isGenerating =
-      isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
-    // 생성 중에는 새 파일을 빠르게 반영하고, 대기 중에도 목록이 오래된 상태로 남지 않게 합니다.
-    const interval = window.setInterval(refreshServerFiles, isGenerating ? 2000 : 30 * 1000);
-    return () => window.clearInterval(interval);
-  }, [isLoading, serverProgress.status, refreshServerFiles]);
-
-  useEffect(() => {
     refreshServerProgress();
-    const isMonitoring =
-      isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
     const interval = window.setInterval(refreshServerProgress, isMonitoring ? 2000 : 5 * 60 * 1000);
     return () => window.clearInterval(interval);
-  }, [isLoading, serverProgress.status, refreshServerProgress]);
+  }, [isMonitoring, refreshServerProgress]);
 
   const runGeneration = useCallback(
     async (keywordTexts: string[]) => {
