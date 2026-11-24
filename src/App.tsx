@@ -27,6 +27,7 @@ function App() {
     deleteItem,
   } = useWorkHub();
 
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [area, setArea] = useState<HubArea>('개인');
   const [category, setCategory] = useState('실험실');
@@ -38,8 +39,11 @@ function App() {
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const ok = await login(password);
-    if (ok) setPassword('');
+    const ok = await login(username, password);
+    if (ok) {
+      setUsername('');
+      setPassword('');
+    }
   };
 
   const handleLogout = () => {
@@ -81,6 +85,8 @@ function App() {
   if (!token) {
     return (
       <LoginScreen
+        username={username}
+        setUsername={setUsername}
         password={password}
         setPassword={setPassword}
         onSubmit={handleLogin}

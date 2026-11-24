@@ -39,7 +39,7 @@ export interface WorkHubSession {
 }
 
 export interface WorkHubRepository {
-  login(password: string): Promise<LoginResponse>;
+  login(username: string, password: string): Promise<LoginResponse>;
   list(token: string): Promise<HubWorkItem[]>;
   save(token: string, item: HubWorkItem): Promise<HubWorkItem>;
   remove(token: string, id: string): Promise<void>;
@@ -126,11 +126,11 @@ async function authorizedFetch(path: string, token: string, init: RequestInit = 
 
 export function createApiWorkHubRepository(): WorkHubRepository {
   return {
-    async login(password) {
+    async login(username, password) {
       const response = await fetch(`${API_BASE_URL}/ryu/workhub/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       });
       if (!response.ok) throw new WorkHubApiError(await readError(response), response.status);
       const payload = (await response.json()) as LoginResponse;

@@ -2,6 +2,8 @@ import type { FormEvent } from 'react';
 import { LockKeyhole } from 'lucide-react';
 
 type LoginScreenProps = {
+  username: string;
+  setUsername: (value: string) => void;
   password: string;
   setPassword: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -9,7 +11,7 @@ type LoginScreenProps = {
   error: string;
 };
 
-export function LoginScreen({ password, setPassword, onSubmit, busy, error }: LoginScreenProps) {
+export function LoginScreen({ username, setUsername, password, setPassword, onSubmit, busy, error }: LoginScreenProps) {
   return (
     <main className="login-screen">
       <section className="login-card">
@@ -26,6 +28,17 @@ export function LoginScreen({ password, setPassword, onSubmit, busy, error }: Lo
         <h1>지영의 업무 허브</h1>
         <p>개인 및 회사 업무를 보려면 로그인해 주세요.</p>
         <form onSubmit={onSubmit}>
+          <label htmlFor="work-hub-username">아이디</label>
+          <input
+            id="work-hub-username"
+            type="text"
+            autoComplete="username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            required
+            autoFocus
+            placeholder="아이디 입력"
+          />
           <label htmlFor="work-hub-password">접속 비밀번호</label>
           <input
             id="work-hub-password"
@@ -34,7 +47,6 @@ export function LoginScreen({ password, setPassword, onSubmit, busy, error }: Lo
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
-            autoFocus
             placeholder="비밀번호 입력"
           />
           {error && (

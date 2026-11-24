@@ -132,11 +132,11 @@ export function useWorkHub() {
   );
 
   const login = useCallback(
-    async (password: string): Promise<boolean> => {
+    async (username: string, password: string): Promise<boolean> => {
       setLoginBusy(true);
       setLoginError('');
       try {
-        const auth = await repository.login(password);
+        const auth = await repository.login(username, password);
         const nextSession = writeStoredSession(auth.token, auth.expires_at);
         setItemsLoading(true);
         setSession(nextSession);
