@@ -1,292 +1,86 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Download, Eraser } from 'lucide-react';
-import type { DragEndEvent } from '@dnd-kit/core';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  TouchSensor,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import './App.css';
+import { useMemo, useState } from 'react';
+import { Activity, ArrowDownUp, BriefcaseBusiness, CalendarDays, Check, ChevronDown, CircleHelp, Filter, FlaskConical, House, ListTodo, Plus, Search, Settings2, Sparkles, X } from 'lucide-react';
+import { LegacyMafiaApp } from './LegacyMafiaApp';
+import './Hub.css';
 
-// Components
-import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
-import { SortableKeywordItem } from './components/KeywordItem';
-import { ServerCsvPanel } from './components/ServerCsvPanel';
-import { GenerationProgress } from './components/GenerationProgress';
-import type { Keyword } from './components/KeywordItem';
-
-// Hooks
-import { useTheme } from './hooks/useTheme';
-import { useKeywords } from './hooks/useKeywords';
-import { useScrollVisibility } from './hooks/useScrollVisibility';
-
-// Types & Utils
-import { adjustHeight } from './utils';
-
-function App() {
-  // UI Hooks
-  const { isDarkMode, toggleTheme } = useTheme();
-  const { isAtBottom, showFloating } = useScrollVisibility();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isBulkMode, setIsBulkMode] = useState(false);
-
-  // Business Logic Hook
-  const {
-    keywords,
-    setKeywords,
-    apiResult,
-    setApiResult,
-    isLoading,
-    addKeywords,
-    removeKeyword,
-    updateKeyword,
-    clearKeywords,
-    callMafiaApi,
-    serverFiles,
-    refreshServerFiles,
-    downloadServerFile,
-    serverProgress,
-    hasGenerationRun,
-    refreshServerProgress,
-    cancelServerGeneration,
-  } = useKeywords();
-  const isServerGenerating = isLoading || serverProgress.status === 'running' || serverProgress.status === 'cancelling';
-  const hasGenerationStatus = hasGenerationRun && (isServerGenerating
-    || serverProgress.status === 'completed'
-    || serverProgress.status === 'cancelled'
-    || serverProgress.status === 'unknown');
-
-  // Input Data States
-  const [singleInput, setSingleInput] = useState('');
-  const [bulkInput, setBulkInput] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
-
-  // Refs
-  const singleRef = useRef<HTMLTextAreaElement>(null);
-  const bulkRef = useRef<HTMLTextAreaElement>(null);
-  const resultRef = useRef<HTMLDivElement>(null);
-
-  // --- UI Handlers ---
-
-  const handleAddKeyword = () => {
-    if (!singleInput.trim()) return;
-    addKeywords([singleInput]);
-    setSingleInput('');
-  };
-  const handleAddBulkKeywords = () => {
-      // 실제 엔터 대신 \n 문자열을 사용해야 합니다.
-      const lines = bulkInput.split(/[\n,]+/).filter(t => t.trim());
-      
-      if (lines.length === 0) return;
-      addKeywords(lines);
-      setBulkInput('');
-      setIsBulkMode(false);
-    };
-  const handleStartEdit = (keyword: Keyword) => {
-    setEditingId(keyword.id);
-    setEditText(keyword.text);
-  };
-
-  const handleSaveEdit = () => {
-    if (!editingId) return;
-    updateKeyword(editingId, editText);
-    setEditingId(null);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setKeywords((items) => {
-        const oldIndex = items.findIndex((i) => i.id === active.id);
-        const newIndex = items.findIndex((i) => i.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  // Sensors for DnD
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
-  );
-
-  // Effects
-  useEffect(() => {
-    if (!isBulkMode) {
-      adjustHeight(singleRef.current);
-    } else {
-      setTimeout(() => adjustHeight(bulkRef.current), 0);
-    }
-  }, [isBulkMode, bulkInput, singleInput]);
-
-  return (
-    <>
-      <div className="app-container">
-        <Header 
-          isMenuOpen={isMenuOpen} 
-          toggleMenu={() => setIsMenuOpen(!isMenuOpen)} 
-          isDarkMode={isDarkMode} 
-          toggleTheme={toggleTheme} 
-        />
-        
-        <Sidebar isOpen={isMenuOpen} toggleMenu={() => setIsMenuOpen(false)} />
-
-        <main className="main-content">
-          <section className="dashboard-section" id="mafia">
-            <div className="section-header">
-              <h1>마피아 (네이버 키워드 검색량)</h1>
-              <p className="subtitle">키워드를 관리하고 검색량을 분석하세요.</p>
-            </div>
-
-            <div className="mafia-controls">
-              <div className="mode-toggle">
-                <button className={!isBulkMode ? 'active' : ''} onClick={() => setIsBulkMode(false)}>단일 입력</button>
-                <button className={isBulkMode ? 'active' : ''} onClick={() => setIsBulkMode(true)}>일괄 입력</button>
-              </div>
-
-              <div className="input-group">
-                <textarea 
-                  ref={isBulkMode ? bulkRef : singleRef}
-                  value={isBulkMode ? bulkInput : singleInput}
-                  onChange={(e) => isBulkMode ? setBulkInput(e.target.value) : setSingleInput(e.target.value)}
-                  placeholder={isBulkMode ? "키워드1, 키워드2 또는 줄바꿈으로 구분..." : "키워드 입력..."}
-                  rows={1}
-                />
-                <button 
-                  onClick={isBulkMode ? handleAddBulkKeywords : handleAddKeyword} 
-                  className="add-button"
-                >
-                  <Plus size={18} /> {isBulkMode ? '일괄 추가' : '추가'}
-                </button>
-              </div>
-
-              {(hasGenerationStatus || apiResult) && (
-                <div className="result-container result-container-inline" ref={resultRef}>
-                  <div className="result-header">
-                    <h4>💡 조회 상태</h4>
-                    {apiResult && !isServerGenerating && <button onClick={() => setApiResult(null)} className="close-result">닫기</button>}
-                  </div>
-                  <div className="result-content">
-                    {hasGenerationStatus ? (
-                      <GenerationProgress
-                        progress={serverProgress}
-                        isRequestActive={isLoading}
-                        onCancel={cancelServerGeneration}
-                      />
-                    ) : apiResult ? (
-                      <div className={apiResult.error ? 'status-message error' : 'status-message success'}>
-                        {String(apiResult.error || apiResult.message || '')}
-                        {typeof apiResult.filename === 'string' && <span className="status-detail">파일: {apiResult.filename}</span>}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="list-container">
-              <div className="list-header">
-                <h3>키워드 목록 <span>{keywords.length}</span></h3>
-                <div className="list-actions">
-                  <button 
-                    onClick={() => {
-                      setBulkInput(keywords.map(k => k.text).join(', '));
-                      setIsBulkMode(true);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }} 
-                    className="text-btn"
-                  >
-                    <Download size={14} /> 일괄 추출
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (window.confirm('전체 삭제하시겠습니까? (삭제 전 일괄 추출됩니다.)')) {
-                        setBulkInput(keywords.map(k => k.text).join(', '));
-                        setIsBulkMode(true);
-                        clearKeywords();
-                      }
-                    }} 
-                    className="text-btn delete"
-                  >
-                    <Eraser size={14} /> 일괄 삭제
-                  </button>
-                </div>
-              </div>
-
-              <div className="list-content-layout">
-                <div className="keyword-list-column">
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <div className="keyword-list">
-                      <SortableContext items={keywords.map(k => k.id)} strategy={verticalListSortingStrategy}>
-                        {keywords.map((keyword) => (
-                          <SortableKeywordItem 
-                            key={keyword.id} keyword={keyword} onRemove={removeKeyword} onStartEdit={handleStartEdit}
-                            isEditing={editingId === keyword.id} editText={editText} setEditText={setEditText}
-                            onSaveEdit={handleSaveEdit} onCancelEdit={() => setEditingId(null)}
-                          />
-                        ))}
-                      </SortableContext>
-                      {keywords.length === 0 && (
-                        <div className="empty-state"><p>등록된 키워드가 없습니다.</p></div>
-                      )}
-                    </div>
-                  </DndContext>
-
-                  <div className="list-footer-action" style={{ opacity: isAtBottom ? 0 : 1, transition: 'opacity 0.5s' }}>
-                    <button 
-                      onClick={callMafiaApi} 
-                      className={`run-button ${isLoading ? 'loading' : ''}`}
-                      disabled={isLoading || keywords.length === 0}
-                    >
-                      {isLoading ? <span>조회 중...</span> : <><Search size={18} /> <span>키워드 검색량 조회하기</span></>}
-                    </button>
-                  </div>
-
-                </div>
-
-                <ServerCsvPanel
-                  files={serverFiles}
-                  progress={serverProgress}
-                  hasGenerationRun={hasGenerationRun}
-                  isRequestActive={isLoading}
-                  onRefresh={() => { refreshServerFiles(); refreshServerProgress(); }}
-                  onCancel={cancelServerGeneration}
-                  onDownload={downloadServerFile}
-                />
-              </div>
-            </div>
-          </section>
-        </main>
-
-        <footer className="footer">
-          <p>&copy; 2024 Ryu Routine Dashboard. Minimalist Design by Ryu.</p>
-        </footer>
-      </div>
-
-      <div className={`search-action ${!showFloating ? 'hidden' : ''} ${isAtBottom ? 'at-bottom' : ''}`}>
-        <button 
-          onClick={callMafiaApi} 
-          className={`run-button ${isLoading ? 'loading' : ''}`}
-          disabled={isLoading || keywords.length === 0}
-        >
-          {isLoading ? <span>조회 중...</span> : <><Search size={18} /> <span>키워드 검색량 조회하기</span></>}
-        </button>
-      </div>
-    </>
-  );
+type Area = '개인' | '회사';
+type Status = '할 일' | '진행 중' | '보류' | '완료';
+type Priority = '높음' | '보통' | '낮음';
+type WorkItem = { id:string; area:Area; category:string; title:string; status:Status; priority:Priority; owner:string; due:string; memo:string; link:string; attachment:string; updated:string; channel:string; spend:string; revenue:string; roas:string; cvr:string; ctr:string; creative:string; setup:string; agency:string; };
+const STORAGE_KEY='jiyoung-work-hub-v1';
+const today = new Date().toISOString().slice(0,10);
+const inDays=(n:number)=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const seed:WorkItem[]=[
+ {id:'s1',area:'회사',category:'더샘 마케팅',title:'메타 신제품 캠페인 데일리 점검',status:'진행 중',priority:'높음',owner:'지영',due:today,memo:'전환 추이 확인 후 소재별 예산 조정안 정리',link:'',attachment:'',updated:new Date().toISOString(),channel:'Meta',spend:'1280000',revenue:'4960000',roas:'',cvr:'2.8',ctr:'1.7',creative:'수분광 쿠션 UGC 03',setup:'운영 중',agency:'주간 리포트 수치 재확인 요청'},
+ {id:'s2',area:'회사',category:'더샘 마케팅',title:'네이버 브랜드 검색 소재 교체',status:'할 일',priority:'보통',owner:'지영',due:inDays(1),memo:'신규 기획전 랜딩 반영 여부 확인',link:'',attachment:'',updated:new Date(Date.now()-3600000).toISOString(),channel:'Naver',spend:'620000',revenue:'1860000',roas:'',cvr:'3.2',ctr:'2.4',creative:'기획전 키비주얼 A/B',setup:'직접 확인 필요',agency:''},
+ {id:'s3',area:'회사',category:'더샘 마케팅',title:'7월 계약·재계약 조건 정리',status:'보류',priority:'높음',owner:'지영',due:inDays(3),memo:'대행사 제안서 받은 뒤 비교',link:'',attachment:'견적서 수신 대기',updated:new Date(Date.now()-86400000).toISOString(),channel:'공통',spend:'',revenue:'',roas:'',cvr:'',ctr:'',creative:'',setup:'미정',agency:'수수료 조정안 회신 대기'},
+ {id:'s4',area:'개인',category:'실험실',title:'경제 인스타 카드뉴스 포맷 실험',status:'진행 중',priority:'보통',owner:'지영',due:inDays(2),memo:'첫 장 훅 문구 3종 비교하고 저장률 기록',link:'',attachment:'',updated:new Date(Date.now()-7200000).toISOString(),channel:'',spend:'',revenue:'',roas:'',cvr:'',ctr:'',creative:'',setup:'',agency:''},
+ {id:'s5',area:'개인',category:'콘텐츠 제작',title:'블로그·릴스 아이디어 인박스 정리',status:'할 일',priority:'낮음',owner:'지영',due:inDays(5),memo:'호캉스 후기, 월급 관리, 소비 기록',link:'',attachment:'',updated:new Date(Date.now()-172800000).toISOString(),channel:'',spend:'',revenue:'',roas:'',cvr:'',ctr:'',creative:'',setup:'',agency:''},
+ {id:'s6',area:'개인',category:'여행·호캉스',title:'주말 호캉스 후보 비교',status:'완료',priority:'낮음',owner:'지영',due:inDays(-1),memo:'후보 3곳 가격 확인',link:'',attachment:'',updated:new Date(Date.now()-259200000).toISOString(),channel:'',spend:'',revenue:'',roas:'',cvr:'',ctr:'',creative:'',setup:'',agency:''},
+];
+const categories:Record<Area,string[]>={개인:['실험실','콘텐츠 제작','경제 인스타','블로그·릴스 아이디어','여행·호캉스','집','차량','통신','캘린더'],회사:['더샘 마케팅','mafia']};
+const blank=(area:Area,category:string):WorkItem=>({id:crypto.randomUUID(),area,category,title:'',status:'할 일',priority:'보통',owner:'지영',due:'',memo:'',link:'',attachment:'',updated:new Date().toISOString(),channel:'',spend:'',revenue:'',roas:'',cvr:'',ctr:'',creative:'',setup:'미정',agency:''});
+function App(){
+ const [items,setItems]=useState<WorkItem[]>(()=>{try{const x=localStorage.getItem(STORAGE_KEY);return x?JSON.parse(x) as WorkItem[]:seed}catch{return seed}});
+ const [area,setArea]=useState<Area>('개인'); const [category,setCategory]=useState('실험실'); const [view,setView]=useState('대시보드'); const [query,setQuery]=useState(''); const [statusFilter,setStatusFilter]=useState('전체'); const [modal,setModal]=useState<WorkItem|null>(null); const [mobileNav,setMobileNav]=useState(false);
+ const save=(next:WorkItem[])=>{setItems(next);localStorage.setItem(STORAGE_KEY,JSON.stringify(next))};
+ const chooseArea=(a:Area)=>{setArea(a);setCategory(a==='개인'?'실험실':'더샘 마케팅');setView('대시보드');setMobileNav(false)};
+ const filtered=useMemo(()=>items.filter(x=>(view==='대시보드'||view==='전체 업무'?true:x.area===area&&x.category===category)&&(!query||`${x.title} ${x.category} ${x.memo} ${x.channel} ${x.agency}`.toLowerCase().includes(query.toLowerCase()))&&(statusFilter==='전체'||x.status===statusFilter)).sort((a,b)=>b.updated.localeCompare(a.updated)),[items,view,area,category,query,statusFilter]);
+ const dueSoon=items.filter(x=>x.status!=='완료'&&x.due&&x.due<=inDays(3)); const todayItems=items.filter(x=>x.status!=='완료'&&x.due===today); const holdItems=items.filter(x=>x.status==='보류');
+ const go=(v:string,c?:string)=>{setView(v);if(c)setCategory(c);setMobileNav(false)};
+ if(view==='mafia-tool')return <><button className="back-hub" onClick={()=>go('대시보드')}>← 업무 허브로</button><LegacyMafiaApp/></>;
+ return <div className="hub-shell">
+  <aside className={`hub-sidebar ${mobileNav?'mobile-open':''}`}>
+   <div className="brand"><div className="brand-mark">j</div><div><b>jiyoung space</b><small>MY WORKSPACE</small></div></div>
+   <button className={`workspace-select ${area==='개인'?'selected':''}`} onClick={()=>chooseArea('개인')}><House size={16}/> 개인 <ChevronDown size={14}/></button>
+   <div className="nav-label">PERSONAL SPACE</div>
+   <button className={`nav-item ${view==='대시보드'?'active':''}`} onClick={()=>go('대시보드')}><Activity size={16}/> 대시보드</button>
+   <div className="nav-label nav-label-row">개인 프로젝트 <button aria-label="새 개인 프로젝트" onClick={()=>{setArea('개인');setModal(blank('개인',category))}}><Plus size={14}/></button></div>
+   {categories.개인.map(c=><button key={c} className={`nav-item sub ${area==='개인'&&category===c&&view!=='대시보드'?'active':''}`} onClick={()=>{setArea('개인');go('목록',c)}}>{c==='실험실'?<FlaskConical size={15}/>:<span className="nav-dot"/>}{c}</button>)}
+   <button className={`workspace-select company-select ${area==='회사'?'selected':''}`} onClick={()=>chooseArea('회사')}><BriefcaseBusiness size={16}/> 회사 <ChevronDown size={14}/></button>
+   <div className="nav-label">WORKSPACE</div>
+   <button className={`nav-item ${area==='회사'&&category==='더샘 마케팅'?'active':''}`} onClick={()=>{setArea('회사');go('목록','더샘 마케팅')}}><Sparkles size={15}/> 더샘 마케팅</button>
+   <button className={`nav-item sub ${category==='mafia'?'active':''}`} onClick={()=>{setArea('회사');go('목록','mafia')}}><span className="nav-dot"/> mafia</button>
+   <button className="nav-item" onClick={()=>go('mafia-tool')}><ArrowDownUp size={15}/> 키워드 도구</button>
+   <div className="sidebar-bottom"><div className="avatar">지</div><div><b>지영</b><small>Personal workspace</small></div><Settings2 size={16}/></div>
+  </aside>
+  {mobileNav&&<button className="nav-scrim" onClick={()=>setMobileNav(false)} aria-label="메뉴 닫기"/>}
+  <main className="hub-main">
+   <header className="hub-topbar"><button className="mobile-menu" onClick={()=>setMobileNav(true)}>☰</button><div className="breadcrumbs">지영의 워크스페이스 <span>/</span> {area} <span>/</span> {view==='대시보드'?'대시보드':category}</div><div className="top-actions"><span className="today-label"><CalendarDays size={15}/>{new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'})}</span><button className="avatar small">지</button></div></header>
+   <section className="hub-content">
+    <div className="welcome-row"><div><div className="eyebrow">{view==='대시보드'?'MONDAY, YOUR SPACE':'WORKSPACE · '+area.toUpperCase()}</div><h1>{view==='대시보드'?'안녕하세요, 지영님':' '+(view==='목록'?category:view)}</h1><p>{view==='대시보드'?'오늘의 흐름을 확인하고, 중요한 일부터 시작해 보세요.':'업무와 기록을 한곳에서 정리하고 바로 업데이트하세요.'}</p></div><button className="primary-btn" onClick={()=>setModal(blank(area,category))}><Plus size={17}/> 새 항목</button></div>
+    {view==='대시보드'&&<>
+     <div className="overview-grid"><button onClick={()=>{setStatusFilter('전체');go('전체 업무')}} className="overview-card"><span className="overview-icon lavender"><ListTodo size={18}/></span><span className="ov-label">오늘 할 일</span><strong>{todayItems.length}</strong><small>오늘 마감 항목</small></button><button onClick={()=>{setStatusFilter('보류');go('전체 업무')}} className="overview-card"><span className="overview-icon peach"><CircleHelp size={18}/></span><span className="ov-label">보류 중</span><strong>{holdItems.length}</strong><small>확인 후 다시 시작</small></button><button onClick={()=>{setStatusFilter('전체');go('전체 업무')}} className="overview-card"><span className="overview-icon blue"><CalendarDays size={18}/></span><span className="ov-label">마감 임박</span><strong>{dueSoon.length}</strong><small>3일 이내 마감</small></button></div>
+     <div className="dashboard-columns"><section className="panel"><div className="panel-head"><div><h2>오늘의 우선순위</h2><p>오늘과 가까운 마감 항목</p></div><button className="text-action" onClick={()=>go('전체 업무')}>전체 보기 →</button></div>{items.filter(x=>x.status!=='완료'&&x.due&&x.due<=inDays(3)).slice(0,4).map(x=><WorkRow key={x.id} item={x} onEdit={()=>setModal(x)} onStatus={s=>save(items.map(i=>i.id===x.id?{...i,status:s,updated:new Date().toISOString()}:i))}/>)}{dueSoon.length===0&&<Empty text="마감이 가까운 항목이 없습니다."/>}</section>
+      <section className="panel"><div className="panel-head"><div><h2>최근 수정</h2><p>마지막으로 업데이트한 업무</p></div><span className="live-pill"><i/> LIVE</span></div>{[...items].sort((a,b)=>b.updated.localeCompare(a.updated)).slice(0,5).map(x=><WorkRow key={x.id} item={x} onEdit={()=>setModal(x)} compact/> )}</section></div>
+     <section className="panel quick-panel"><div className="panel-head"><div><h2>공간 바로가기</h2><p>프로젝트별로 이어서 관리하세요</p></div></div><div className="quick-links"><button onClick={()=>{setArea('개인');go('목록','실험실')}}><span className="quick-icon lavender"><FlaskConical size={17}/></span><b>실험실</b><small>아이디어와 실험 기록</small><span className="quick-count">{items.filter(i=>i.category==='실험실').length}개 →</span></button><button onClick={()=>{setArea('회사');go('목록','더샘 마케팅')}}><span className="quick-icon green"><BriefcaseBusiness size={17}/></span><b>더샘 마케팅</b><small>캠페인 · 데일리 리포트</small><span className="quick-count">{items.filter(i=>i.category==='더샘 마케팅').length}개 →</span></button><button onClick={()=>{setArea('개인');go('목록','콘텐츠 제작')}}><span className="quick-icon peach"><Sparkles size={17}/></span><b>콘텐츠 제작</b><small>블로그와 릴스 아이디어</small><span className="quick-count">{items.filter(i=>i.category==='콘텐츠 제작'||i.category==='블로그·릴스 아이디어').length}개 →</span></button></div></section>
+    </>}
+    {view!=='대시보드'&&<>
+     {category==='더샘 마케팅'&&area==='회사'&&<div className="metrics-grid">{[['광고비',filtered.reduce((s,x)=>s+(Number(x.spend)||0),0).toLocaleString()+'원'],['매출',filtered.reduce((s,x)=>s+(Number(x.revenue)||0),0).toLocaleString()+'원'],['평균 ROAS',avg(filtered,'roas')+'x'],['평균 CVR / CTR',avg(filtered,'cvr')+'% / '+avg(filtered,'ctr')+'%']].map(([l,v])=><div className="metric" key={l}><small>{l}</small><b>{v}</b></div>)}</div>}
+     {category==='실험실'&&area==='개인'&&<div className="lab-banner"><span className="lab-symbol"><FlaskConical size={20}/></span><div><b>지영의 실험실</b><p>아이디어를 작게 시험하고, 결과를 기록해 다음 시도로 연결해 보세요.</p></div><span className="lab-tag">실험 기록 {items.filter(x=>x.category==='실험실').length}</span></div>}
+     <div className="panel table-panel"><div className="toolbar"><div className="searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="제목, 메모, 채널 검색"/></div><div className="filterbox"><Filter size={15}/><select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>{['전체','할 일','진행 중','보류','완료'].map(x=><option key={x}>{x}</option>)}</select></div><button className="primary-btn compact-btn" onClick={()=>setModal(blank(area,category))}><Plus size={16}/> 항목 추가</button></div>
+      <div className="table-wrap"><table><thead><tr><th>업무</th><th>상태</th><th>우선순위</th><th>담당자</th><th>마감일</th>{category==='더샘 마케팅'&&area==='회사'&&<><th>채널 / 소재</th><th>광고비</th><th>매출</th><th>ROAS</th><th>CVR · CTR</th></>}</tr></thead><tbody>{filtered.map(x=><tr key={x.id} onClick={()=>setModal(x)}><td><div className="task-title">{x.title||'제목 없음'}</div><div className="task-meta">{x.category}{x.memo&&' · '+x.memo}</div></td><td><StatusPill status={x.status}/></td><td><PriorityLabel priority={x.priority}/></td><td>{x.owner||'—'}</td><td>{x.due||'—'}</td>{category==='더샘 마케팅'&&area==='회사'&&<><td>{x.channel||'—'}{x.creative&&<small className="table-sub">{x.creative}</small>}</td><td>{x.spend?Number(x.spend).toLocaleString()+'원':'—'}</td><td>{x.revenue?Number(x.revenue).toLocaleString()+'원':'—'}</td><td>{x.roas?x.roas+'x':'—'}</td><td>{x.cvr||'—'}% · {x.ctr||'—'}%</td></>}</tr>)}</tbody></table>{!filtered.length&&<Empty text="조건에 맞는 항목이 없습니다. 새 항목을 추가해 보세요."/>}</div>
+      {category==='더샘 마케팅'&&area==='회사'&&<div className="integration-note"><CircleHelp size={15}/><span>광고 플랫폼 자동 연동·수치 수집 방식: <b>미정</b> · 현재 입력 데이터 기준으로 요약합니다.</span></div>}
+     </div>
+    </>}
+    <footer className="hub-footer"><span>저장 위치: 이 브라우저</span><span>백엔드 연동 구조: 준비 예정 · 직접 확인 필요</span></footer>
+   </section>
+  </main>
+  {modal&&<ItemModal item={modal} onClose={()=>setModal(null)} onSave={x=>{const next=items.some(i=>i.id===x.id)?items.map(i=>i.id===x.id?x:i):[x,...items];save(next);setModal(null)}} onDelete={()=>{save(items.filter(i=>i.id!==modal.id));setModal(null)}} isExisting={items.some(i=>i.id===modal.id)}/>}
+ </div>
 }
-
+function avg(xs:WorkItem[],key:'roas'|'cvr'|'ctr'){const nums=xs.map(x=>Number(x[key])).filter(x=>x>0);return nums.length?(nums.reduce((a,b)=>a+b,0)/nums.length).toFixed(1):'—'}
+function StatusPill({status}:{status:Status}){return <span className={'status-pill '+status.replace(' ','')}>{status}</span>}
+function PriorityLabel({priority}:{priority:Priority}){return <span className={'priority '+priority}>{priority==='높음'?'↑ ':priority==='낮음'?'↓ ':''}{priority}</span>}
+function WorkRow({item,onEdit,onStatus,compact=false}:{item:WorkItem;onEdit:()=>void;onStatus?:(s:Status)=>void;compact?:boolean}){return <div className="work-row"><button className="row-check" aria-label="완료 상태 전환" onClick={()=>onStatus?.(item.status==='완료'?'할 일':'완료')}>{item.status==='완료'?<Check size={13}/>:null}</button><button className="row-body" onClick={onEdit}><span className="row-title">{item.title}</span><span className="row-sub">{item.category} · {item.due||'날짜 미정'}{!compact&&<StatusPill status={item.status}/>}</span></button><PriorityLabel priority={item.priority}/></div>}
+function Empty({text}:{text:string}){return <div className="empty-state"><span>✦</span>{text}</div>}
+function ItemModal({item,onClose,onSave,onDelete,isExisting}:{item:WorkItem;onClose:()=>void;onSave:(x:WorkItem)=>void;onDelete:()=>void;isExisting:boolean}){
+ const [form,setForm]=useState(item); const put=(key:keyof WorkItem,value:string)=>setForm(f=>({...f,[key]:value,updated:new Date().toISOString()})); const company=form.area==='회사'&&form.category==='더샘 마케팅';
+ return <div className="modal-backdrop" onMouseDown={onClose}><div className="item-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">{form.area} · {form.category}</span><h2>{isExisting?'항목 편집':'새 항목'}</h2></div><button className="icon-button" onClick={onClose}><X size={18}/></button></div><div className="modal-form">
+  <label className="wide">제목<input autoFocus value={form.title} onChange={e=>put('title',e.target.value)} placeholder="예: 다음 주 캠페인 리포트 확인"/></label>
+  <div className="form-grid"><label>영역<select value={form.area} onChange={e=>{const a=e.target.value as Area;setForm(f=>({...f,area:a,category:a==='개인'?'실험실':'더샘 마케팅'}))}}><option>개인</option><option>회사</option></select></label><label>카테고리<select value={form.category} onChange={e=>put('category',e.target.value)}>{categories[form.area].map(c=><option key={c}>{c}</option>)}</select></label><label>상태<select value={form.status} onChange={e=>put('status',e.target.value)}>{['할 일','진행 중','보류','완료'].map(x=><option key={x}>{x}</option>)}</select></label><label>우선순위<select value={form.priority} onChange={e=>put('priority',e.target.value)}>{['높음','보통','낮음'].map(x=><option key={x}>{x}</option>)}</select></label><label>담당자<input value={form.owner} onChange={e=>put('owner',e.target.value)} placeholder="담당자"/></label><label>마감일<input type="date" value={form.due} onChange={e=>put('due',e.target.value)}/></label></div>
+  <label>메모<textarea value={form.memo} onChange={e=>put('memo',e.target.value)} rows={3} placeholder="내용과 다음 행동을 기록하세요"/></label><div className="form-grid"><label>링크<input value={form.link} onChange={e=>put('link',e.target.value)} placeholder="https://"/></label><label>첨부 메모<input value={form.attachment} onChange={e=>put('attachment',e.target.value)} placeholder="파일명 또는 참고 메모"/></label></div>
+  {company&&<><div className="form-divider"><span>더샘 퍼포먼스 마케팅</span></div><div className="form-grid three"><label>채널<input value={form.channel} onChange={e=>put('channel',e.target.value)} placeholder="Meta, Naver…"/></label><label>광고비 (원)<input type="number" value={form.spend} onChange={e=>put('spend',e.target.value)}/></label><label>매출 (원)<input type="number" value={form.revenue} onChange={e=>put('revenue',e.target.value)}/></label><label>ROAS <input value={form.spend&&form.revenue?(Number(form.revenue)/Number(form.spend)).toFixed(2):form.roas} onChange={e=>put('roas',e.target.value)} placeholder="자동 계산"/></label><label>CVR (%)<input type="number" value={form.cvr} onChange={e=>put('cvr',e.target.value)}/></label><label>CTR (%)<input type="number" value={form.ctr} onChange={e=>put('ctr',e.target.value)}/></label></div><label>소재<input value={form.creative} onChange={e=>put('creative',e.target.value)} placeholder="소재명 / 버전"/></label><div className="form-grid"><label>세팅 상태<select value={form.setup||'미정'} onChange={e=>put('setup',e.target.value)}>{['미정','직접 확인 필요','준비 중','운영 중','중단'].map(x=><option key={x}>{x}</option>)}</select></label><label>대행사 이슈<input value={form.agency} onChange={e=>put('agency',e.target.value)} placeholder="이슈, 회신 대기, 후속 조치"/></label></div><div className="integration-note inline"><CircleHelp size={15}/><span>채널 API, 계약 데이터 및 일정 연동 방식은 <b>미정 · 직접 확인 필요</b>합니다.</span></div></>}
+ </div><div className="modal-actions">{isExisting&&<button className="delete-btn" onClick={onDelete}>삭제</button>}<span/><button className="secondary-btn" onClick={onClose}>취소</button><button className="primary-btn" onClick={()=>form.title.trim()&&onSave(form)}><Check size={16}/> 저장</button></div></div></div>
+}
 export default App;
