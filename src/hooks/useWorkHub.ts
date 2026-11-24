@@ -1,15 +1,40 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  clearStoredSession,
   createApiWorkHubRepository,
   LEGACY_IMPORT_KEY,
   LEGACY_ITEMS_KEY,
   readLegacyWorkHubItems,
-  readStoredSession,
   WorkHubApiError,
-  writeStoredSession,
 } from '../api/workHubRepository';
-import type { HubWorkItem, WorkHubSession } from '../api/workHubRepository';
+import type { HubWorkItem, WorkHubRepository } from '../api/workHubRepository';
+import {
+  clearStoredSession,
+  readStoredSession,
+  writeStoredSession,
+} from '../api/workHubSession';
+import type { WorkHubSession } from '../api/workHubSession';
+
+async function migrateLegacyItemsIfNeeded(
+  repository: WorkHubRepository,
+  accessToken: string,
+  remoteItems: HubWorkItem[]
+): Promise<HubWorkItem[]> {
+  if (localStorage.getItem(LEGACY_IMPORT_KEY) === '1') {
+    return remoteItems;
+  }
+  const localItems = readLegacyWorkHubItems();
+  const existingIds = new Set(remoteItems.map((item) => item.id));
+  let importedAny = false;
+  for (const localItem of localItems) {
+    if (existingIds.has(localItem.id)) continue;
+    await repository.save(accessToken, localItem);
+    existingIds.add(localItem.id);
+    importedAny = true;
+  }
+  localStorage.removeItem(LEGACY_ITEMS_KEY);
+  localStorage.setItem(LEGACY_IMPORT_KEY, '1');
+  return importedAny ? repository.list(accessToken) : remoteItems;
+}
 
 /**
  * Manage Work Hub session authentication, legacy localStorage migration, and PostgreSQL CRUD.
@@ -38,22 +63,9 @@ export function useWorkHub() {
       setItemsLoading(true);
       setSyncError('');
       try {
-        let remoteItems = await repository.list(accessToken);
-        if (localStorage.getItem(LEGACY_IMPORT_KEY) !== '1') {
-          const localItems = readLegacyWorkHubItems();
-          const existingIds = new Set(remoteItems.map((item) => item.id));
-          let importedAny = false;
-          for (const localItem of localItems) {
-            if (existingIds.has(localItem.id)) continue;
-            await repository.save(accessToken, localItem);
-            existingIds.add(localItem.id);
-            importedAny = true;
-          }
-          localStorage.removeItem(LEGACY_ITEMS_KEY);
-          localStorage.setItem(LEGACY_IMPORT_KEY, '1');
-          if (importedAny) remoteItems = await repository.list(accessToken);
-        }
-        setItems(remoteItems);
+        const remoteItems = await repository.list(accessToken);
+        const syncedItems = await migrateLegacyItemsIfNeeded(repository, accessToken, remoteItems);
+        setItems(syncedItems);
       } catch (error) {
         if (error instanceof WorkHubApiError && error.status === 401) {
           expireSession();

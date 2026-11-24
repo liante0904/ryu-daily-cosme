@@ -45,6 +45,67 @@ export function createBlankWorkItem(area: HubArea, category: string): HubWorkIte
   };
 }
 
+export function normalizeWorkHubItem(raw: Partial<HubWorkItem>): HubWorkItem {
+  const area: HubArea = raw.area === '회사' ? '회사' : '개인';
+  const status: HubStatus =
+    raw.status === '진행 중' || raw.status === '보류' || raw.status === '완료' ? raw.status : '할 일';
+  const priority: HubPriority =
+    raw.priority === '높음' || raw.priority === '낮음' ? raw.priority : '보통';
+
+  return {
+    id: typeof raw.id === 'string' && raw.id.trim() ? raw.id : crypto.randomUUID(),
+    area,
+    category:
+      typeof raw.category === 'string' && raw.category
+        ? raw.category
+        : area === '개인'
+          ? '실험실'
+          : '더샘 마케팅',
+    title: typeof raw.title === 'string' ? raw.title : '',
+    status,
+    priority,
+    owner: typeof raw.owner === 'string' ? raw.owner : '지영',
+    due: typeof raw.due === 'string' ? raw.due : '',
+    memo: typeof raw.memo === 'string' ? raw.memo : '',
+    link: typeof raw.link === 'string' ? raw.link : '',
+    attachment: typeof raw.attachment === 'string' ? raw.attachment : '',
+    updated: typeof raw.updated === 'string' && raw.updated ? raw.updated : new Date().toISOString(),
+    channel: typeof raw.channel === 'string' ? raw.channel : '',
+    spend: raw.spend != null ? String(raw.spend) : '',
+    revenue: raw.revenue != null ? String(raw.revenue) : '',
+    roas: raw.roas != null ? String(raw.roas) : '',
+    cvr: raw.cvr != null ? String(raw.cvr) : '',
+    ctr: raw.ctr != null ? String(raw.ctr) : '',
+    creative: typeof raw.creative === 'string' ? raw.creative : '',
+    setup: typeof raw.setup === 'string' && raw.setup ? raw.setup : '미정',
+    agency: typeof raw.agency === 'string' ? raw.agency : '',
+  };
+}
+
+export function filterAndSortWorkItems(
+  items: HubWorkItem[],
+  view: string,
+  area: HubArea,
+  category: string,
+  query: string,
+  statusFilter: string
+): HubWorkItem[] {
+  const normalizedQuery = query.toLowerCase();
+  return items
+    .filter(
+      (item) =>
+        (view === '대시보드' || view === '전체 업무'
+          ? true
+          : item.area === area && item.category === category) &&
+        (!normalizedQuery ||
+          `${item.title} ${item.category} ${item.memo} ${item.channel} ${item.agency}`
+            .toLowerCase()
+            .includes(normalizedQuery)) &&
+        (statusFilter === '전체' || item.status === statusFilter)
+    )
+    .sort((a, b) => b.updated.localeCompare(a.updated));
+}
+
 export function calcAverageMetric(items: HubWorkItem[], key: 'roas' | 'cvr' | 'ctr'): string {
   const nums = items.map((item) => Number(item[key])).filter((value) => value > 0);
   return nums.length ? (nums.reduce((sum, value) => sum + value, 0) / nums.length).toFixed(1) : '—';

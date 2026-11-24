@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { CalendarDays, CircleHelp, LogOut, Plus } from 'lucide-react';
+import { CircleHelp, Plus } from 'lucide-react';
 import { LegacyMafiaApp } from './LegacyMafiaApp';
 import type { HubArea, HubWorkItem } from './api/workHubRepository';
 import { LoginScreen, WorkHubLoadingScreen } from './components/workhub/LoginScreen';
@@ -8,8 +8,9 @@ import { WorkHubDashboard } from './components/workhub/WorkHubDashboard';
 import { WorkHubItemModal } from './components/workhub/WorkHubItemModal';
 import { WorkHubSidebar } from './components/workhub/WorkHubSidebar';
 import { WorkHubTableView } from './components/workhub/WorkHubTableView';
+import { WorkHubTopbar } from './components/workhub/WorkHubTopbar';
 import { useWorkHub } from './hooks/useWorkHub';
-import { createBlankWorkItem } from './workHubConfig';
+import { createBlankWorkItem, filterAndSortWorkItems } from './workHubConfig';
 import './Hub.css';
 
 function App() {
@@ -65,20 +66,7 @@ function App() {
   };
 
   const filtered = useMemo(
-    () =>
-      items
-        .filter(
-          (item) =>
-            (view === '대시보드' || view === '전체 업무'
-              ? true
-              : item.area === area && item.category === category) &&
-            (!query ||
-              `${item.title} ${item.category} ${item.memo} ${item.channel} ${item.agency}`
-                .toLowerCase()
-                .includes(query.toLowerCase())) &&
-            (statusFilter === '전체' || item.status === statusFilter)
-        )
-        .sort((a, b) => b.updated.localeCompare(a.updated)),
+    () => filterAndSortWorkItems(items, view, area, category, query, statusFilter),
     [items, view, area, category, query, statusFilter]
   );
 
@@ -132,29 +120,13 @@ function App() {
       />
 
       <main className="hub-main">
-        <header className="hub-topbar">
-          <button className="mobile-menu" onClick={() => setMobileNav(true)}>
-            ☰
-          </button>
-          <div className="breadcrumbs">
-            지영의 워크스페이스 <span>/</span> {area} <span>/</span>{' '}
-            {view === '대시보드' ? '대시보드' : category}
-          </div>
-          <div className="top-actions">
-            <span className="today-label">
-              <CalendarDays size={15} />
-              {new Date().toLocaleDateString('ko-KR', {
-                month: 'long',
-                day: 'numeric',
-                weekday: 'short',
-              })}
-            </span>
-            <button className="logout-btn" onClick={handleLogout}>
-              <LogOut size={14} /> 로그아웃
-            </button>
-            <button className="avatar small">지</button>
-          </div>
-        </header>
+        <WorkHubTopbar
+          area={area}
+          view={view}
+          category={category}
+          onOpenMobileNav={() => setMobileNav(true)}
+          onLogout={handleLogout}
+        />
 
         <section className="hub-content">
           {syncError && (
