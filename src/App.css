@@ -4,7 +4,7 @@
   --panel-bg: rgba(255, 255, 255, 0.8);
   --header-bg: rgba(255, 255, 255, 0.8);
   --text-primary: #1d1d1f;
-  --text-secondary: #86868b; 
+  --text-secondary: #686a73;
   --accent: #515154; /* 촌스러운 검은색에서 세련된 슬레이트 그레이로 연하게 조정 */
   --accent-hover: #1d1d1f;
   --border: rgba(0, 0, 0, 0.08);
@@ -22,7 +22,7 @@
   --panel-bg: rgba(28, 28, 30, 0.8);
   --header-bg: rgba(28, 28, 30, 0.8);
   --text-primary: #f5f5f7;
-  --text-secondary: #86868b;
+  --text-secondary: #a9aab2;
   --accent: #86868b; /* 다크모드에서도 너무 튀지 않는 차분한 실버 그레이 */
   --accent-hover: #f5f5f7;
   --border: rgba(255, 255, 255, 0.1);
@@ -37,8 +37,8 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 body {
@@ -46,7 +46,7 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   line-height: 1.5;
-  font-weight: 400;
+  font-weight: 500;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -634,6 +634,28 @@ body {
   }
 }
 
+.text-btn {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.server-progress-percent,
+.server-progress-message,
+.server-file-date,
+.server-files-header span,
+.server-files-empty {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.today-badge {
+  font-size: 11px;
+}
+
+.drag-handle {
+  opacity: 0.75;
+}
+
 /* Keyword Items */
 .keyword-list {
   display: flex;
@@ -979,4 +1001,9 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+.keyword-text {
+  font-size: 14px;
+  font-weight: 500;
 }
