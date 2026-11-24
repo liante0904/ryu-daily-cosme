@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Check, CircleHelp, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import type { HubArea, HubWorkItem } from '../../api/workHubRepository';
-import { HUB_CATEGORIES, HUB_PRIORITIES, HUB_SETUP_OPTIONS, HUB_STATUSES } from '../../workHubConfig';
+import { HUB_CATEGORIES, HUB_PRIORITIES, HUB_STATUSES } from '../../workHubConfig';
+import { MarketingFieldsSection } from './MarketingFieldsSection';
 
 type WorkHubItemModalProps = {
   item: HubWorkItem;
@@ -11,7 +12,13 @@ type WorkHubItemModalProps = {
   isExisting: boolean;
 };
 
-export function WorkHubItemModal({ item, onClose, onSave, onDelete, isExisting }: WorkHubItemModalProps) {
+export function WorkHubItemModal({
+  item,
+  onClose,
+  onSave,
+  onDelete,
+  isExisting,
+}: WorkHubItemModalProps) {
   const [form, setForm] = useState(item);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
@@ -106,7 +113,10 @@ export function WorkHubItemModal({ item, onClose, onSave, onDelete, isExisting }
             </label>
             <label>
               우선순위
-              <select value={form.priority} onChange={(event) => put('priority', event.target.value)}>
+              <select
+                value={form.priority}
+                onChange={(event) => put('priority', event.target.value)}
+              >
                 {HUB_PRIORITIES.map((priority) => (
                   <option key={priority}>{priority}</option>
                 ))}
@@ -122,7 +132,11 @@ export function WorkHubItemModal({ item, onClose, onSave, onDelete, isExisting }
             </label>
             <label>
               마감일
-              <input type="date" value={form.due} onChange={(event) => put('due', event.target.value)} />
+              <input
+                type="date"
+                value={form.due}
+                onChange={(event) => put('due', event.target.value)}
+              />
             </label>
           </div>
           <label>
@@ -153,99 +167,7 @@ export function WorkHubItemModal({ item, onClose, onSave, onDelete, isExisting }
             </label>
           </div>
 
-          {isCompanyMarketing && (
-            <>
-              <div className="form-divider">
-                <span>더샘 퍼포먼스 마케팅</span>
-              </div>
-              <div className="form-grid three">
-                <label>
-                  채널
-                  <input
-                    value={form.channel}
-                    onChange={(event) => put('channel', event.target.value)}
-                    placeholder="Meta, Naver…"
-                  />
-                </label>
-                <label>
-                  광고비 (원)
-                  <input
-                    type="number"
-                    value={form.spend}
-                    onChange={(event) => put('spend', event.target.value)}
-                  />
-                </label>
-                <label>
-                  매출 (원)
-                  <input
-                    type="number"
-                    value={form.revenue}
-                    onChange={(event) => put('revenue', event.target.value)}
-                  />
-                </label>
-                <label>
-                  ROAS{' '}
-                  <input
-                    value={
-                      form.spend && form.revenue
-                        ? (Number(form.revenue) / Number(form.spend)).toFixed(2)
-                        : form.roas
-                    }
-                    onChange={(event) => put('roas', event.target.value)}
-                    placeholder="자동 계산"
-                  />
-                </label>
-                <label>
-                  CVR (%)
-                  <input
-                    type="number"
-                    value={form.cvr}
-                    onChange={(event) => put('cvr', event.target.value)}
-                  />
-                </label>
-                <label>
-                  CTR (%)
-                  <input
-                    type="number"
-                    value={form.ctr}
-                    onChange={(event) => put('ctr', event.target.value)}
-                  />
-                </label>
-              </div>
-              <label>
-                소재
-                <input
-                  value={form.creative}
-                  onChange={(event) => put('creative', event.target.value)}
-                  placeholder="소재명 / 버전"
-                />
-              </label>
-              <div className="form-grid">
-                <label>
-                  세팅 상태
-                  <select value={form.setup || '미정'} onChange={(event) => put('setup', event.target.value)}>
-                    {HUB_SETUP_OPTIONS.map((opt) => (
-                      <option key={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  대행사 이슈
-                  <input
-                    value={form.agency}
-                    onChange={(event) => put('agency', event.target.value)}
-                    placeholder="이슈, 회신 대기, 후속 조치"
-                  />
-                </label>
-              </div>
-              <div className="integration-note inline">
-                <CircleHelp size={15} />
-                <span>
-                  채널 API, 계약 데이터 및 일정 연동 방식은 <b>미정 · 직접 확인 필요</b>합니다.
-                </span>
-              </div>
-            </>
-          )}
+          {isCompanyMarketing && <MarketingFieldsSection form={form} onChange={put} />}
         </div>
 
         {formError && (
