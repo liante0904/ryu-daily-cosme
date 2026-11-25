@@ -9,11 +9,23 @@ type LoginScreenProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   busy: boolean;
   error: string;
+  showTestEntry?: boolean;
+  onTestEntry?: () => void;
 };
 
-export function LoginScreen({ username, setUsername, password, setPassword, onSubmit, busy, error }: LoginScreenProps) {
+export function LoginScreen({
+  username,
+  setUsername,
+  password,
+  setPassword,
+  onSubmit,
+  busy,
+  error,
+  showTestEntry = false,
+  onTestEntry,
+}: LoginScreenProps) {
   return (
-    <main className="login-screen">
+    <main className={showTestEntry ? 'login-screen test-login-screen' : 'login-screen'}>
       <section className="login-card">
         <div className="login-brand">
           <div className="brand-mark">j</div>
@@ -54,12 +66,26 @@ export function LoginScreen({ username, setUsername, password, setPassword, onSu
               {error}
             </div>
           )}
-          <button className="primary-btn login-submit" disabled={busy}>
-            {busy ? '확인 중…' : '로그인'}
-          </button>
+          {showTestEntry ? (
+            <div className="login-actions">
+              <button className="primary-btn login-submit" disabled={busy}>
+                {busy ? '확인 중…' : '로그인'}
+              </button>
+              <button className="test-entry-btn" type="button" onClick={onTestEntry}>
+                로그인 없이 입장
+              </button>
+            </div>
+          ) : (
+            <button className="primary-btn login-submit" disabled={busy}>
+              {busy ? '확인 중…' : '로그인'}
+            </button>
+          )}
         </form>
-        <small className="login-footnote">로그인 세션은 이 브라우저 탭에서만 유지됩니다.</small>
+        <small className="login-footnote">
+          {showTestEntry ? '테스트 항목은 이 브라우저에만 저장됩니다.' : '로그인 세션은 이 브라우저 탭에서만 유지됩니다.'}
+        </small>
       </section>
+      {showTestEntry && <span className="login-test-note">&lt;테스트 공간임&gt;</span>}
     </main>
   );
 }

@@ -10,12 +10,17 @@ import {
   writeStoredSession,
 } from '../api/workHubRepository';
 import type { HubWorkItem, WorkHubSession } from '../api/workHubRepository';
+import { createTestWorkHubRepository } from '../api/testWorkHubRepository';
 
 /**
  * Manage Work Hub session authentication, legacy localStorage migration, and PostgreSQL CRUD.
  */
 export function useWorkHub() {
-  const repository = useMemo(() => createApiWorkHubRepository(), []);
+  const testMode = import.meta.env.VITE_TEST_LOGIN_BYPASS === 'true';
+  const repository = useMemo(
+    () => (testMode ? createTestWorkHubRepository() : createApiWorkHubRepository()),
+    [testMode]
+  );
   const [session, setSession] = useState<WorkHubSession | null>(() => readStoredSession());
   const token = session?.token ?? null;
 
@@ -39,7 +44,7 @@ export function useWorkHub() {
       setSyncError('');
       try {
         let remoteItems = await repository.list(accessToken);
-        if (localStorage.getItem(LEGACY_IMPORT_KEY) !== '1') {
+        if (!testMode && localStorage.getItem(LEGACY_IMPORT_KEY) !== '1') {
           const localItems = readLegacyWorkHubItems();
           const existingIds = new Set(remoteItems.map((item) => item.id));
           let importedAny = false;
@@ -64,7 +69,7 @@ export function useWorkHub() {
         setItemsLoading(false);
       }
     },
-    [repository, expireSession]
+    [repository, expireSession, testMode]
   );
 
   useEffect(() => {
@@ -151,6 +156,13 @@ export function useWorkHub() {
     [repository]
   );
 
+  const enterTestMode = useCallback(() => {
+    const expiresAt = Math.floor(Date.now() / 1000) + 8 * 60 * 60;
+    const nextSession = writeStoredSession(`test-preview-${crypto.randomUUID()}`, expiresAt);
+    setItemsLoading(true);
+    setSession(nextSession);
+  }, []);
+
   const logout = useCallback(() => {
     clearStoredSession();
     setSession(null);
@@ -166,7 +178,9 @@ export function useWorkHub() {
     syncError,
     loginBusy,
     loginError,
+    testMode,
     login,
+    enterTestMode,
     logout,
     reloadItems,
     saveItem,

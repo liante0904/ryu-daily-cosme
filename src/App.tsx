@@ -20,7 +20,9 @@ function App() {
     syncError,
     loginBusy,
     loginError,
+    testMode,
     login,
+    enterTestMode,
     logout,
     reloadItems,
     saveItem,
@@ -92,6 +94,8 @@ function App() {
         onSubmit={handleLogin}
         busy={loginBusy}
         error={loginError}
+        showTestEntry={testMode}
+        onTestEntry={enterTestMode}
       />
     );
   }
@@ -218,7 +222,11 @@ function App() {
           )}
 
           <footer className="hub-footer">
-            <span>저장 위치: PostgreSQL · 로그인 세션 유지 중</span>
+            <span>
+              {testMode
+                ? '테스트 모드 · 이 브라우저의 테스트 저장소'
+                : '저장 위치: PostgreSQL · 로그인 세션 유지 중'}
+            </span>
             <span>자동 연동 방식은 미정 · 직접 확인 필요</span>
           </footer>
         </section>
