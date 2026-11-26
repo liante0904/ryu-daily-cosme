@@ -17,12 +17,12 @@ import { createTestWorkHubRepository } from '../api/testWorkHubRepository';
  */
 export function useWorkHub() {
   const testMode = import.meta.env.VITE_TEST_LOGIN_BYPASS === 'true';
-  const repository = useMemo(
-    () => (testMode ? createTestWorkHubRepository() : createApiWorkHubRepository()),
-    [testMode]
-  );
+  const apiRepository = useMemo(() => createApiWorkHubRepository(), []);
+  const testRepository = useMemo(() => createTestWorkHubRepository(), []);
   const [session, setSession] = useState<WorkHubSession | null>(() => readStoredSession());
   const token = session?.token ?? null;
+  const localPreview = testMode && Boolean(token?.startsWith('test-preview-'));
+  const repository = localPreview ? testRepository : apiRepository;
 
   const [items, setItems] = useState<HubWorkItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(Boolean(token));
@@ -141,7 +141,7 @@ export function useWorkHub() {
       setLoginBusy(true);
       setLoginError('');
       try {
-        const auth = await repository.login(username, password);
+        const auth = await apiRepository.login(username, password);
         const nextSession = writeStoredSession(auth.token, auth.expires_at);
         setItemsLoading(true);
         setSession(nextSession);
@@ -153,7 +153,7 @@ export function useWorkHub() {
         setLoginBusy(false);
       }
     },
-    [repository]
+    [apiRepository]
   );
 
   const enterTestMode = useCallback(() => {
