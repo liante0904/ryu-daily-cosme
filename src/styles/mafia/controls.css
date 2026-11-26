@@ -1,0 +1,418 @@
+/* Controls */
+.mafia-controls {
+  margin-bottom: 40px;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  background-color: var(--border);
+  padding: 2px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.mode-toggle button {
+  padding: 6px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.mode-toggle button.active {
+  background-color: var(--item-bg);
+  color: var(--text-primary);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Input Group */
+.input-group {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  background-color: var(--item-bg);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  width: 100%;
+}
+
+.input-group textarea {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 8px;
+  font-size: 17px;
+  color: var(--text-primary);
+  font-family: inherit;
+  resize: none;
+  min-height: 24px;
+  outline: none;
+  word-break: break-all;
+  white-space: pre-wrap;
+  line-height: 1.4;
+  display: block;
+}
+
+.add-button {
+  background-color: var(--accent);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 14px 36px; /* 조회 버튼과 동일한 패딩 */
+  border-radius: 12px; /* 조회 버튼과 동일한 곡률 */
+  font-size: 16px; /* 조회 버튼과 동일한 폰트 크기 */
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  /* 애니메이션은 조회 버튼과 달리 즉각적이고 가벼운 0.2s 유지 */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.add-button:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* List container */
+.list-container {
+  margin-top: 40px;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.list-header h3 {
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.list-header h3 span {
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+.list-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.text-btn {
+  background: none;
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.text-btn:hover {
+  border-color: var(--accent);
+  background-color: var(--item-hover);
+  color: var(--text-primary);
+}
+
+.text-btn.delete {
+  color: var(--danger);
+  border-color: var(--border);
+}
+
+.text-btn.delete:hover {
+  border-color: var(--danger);
+  background-color: rgba(215, 0, 21, 0.05);
+  color: var(--danger);
+}
+
+.server-files-panel {
+  align-self: start;
+  padding: 14px;
+  background-color: var(--item-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.server-progress-panel {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.server-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.cancel-btn {
+  color: var(--danger);
+}
+
+.cancel-btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.server-cancelling-message {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  color: var(--danger);
+  background: rgba(255, 59, 48, 0.08);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.server-progress-count {
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.server-progress-track {
+  width: 100%;
+  height: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.server-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.server-progress-percent {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-align: right;
+}
+
+.server-progress-keyword {
+  overflow-wrap: anywhere;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.generation-progress-elapsed {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.generation-progress-eta {
+  margin-top: 4px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.server-progress-loading {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.server-progress-message {
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.result-generation-status {
+  padding: 4px 0;
+}
+
+.result-generation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.result-generation-count {
+  margin-top: 12px;
+  color: var(--accent);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.result-generation-keyword {
+  overflow-wrap: anywhere;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.server-cancelled-message {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.list-content-layout {
+  position: relative;
+}
+
+.keyword-list-column {
+  width: 100%;
+}
+
+/* 기존 키워드 목록 폭은 유지하고, 넓은 화면에서만 오른쪽 빈 공간에 배치 */
+@media (min-width: 1400px) {
+  .server-files-panel {
+    position: absolute;
+    top: 0;
+    left: calc(100% + 20px);
+    width: 300px;
+  }
+}
+
+.server-files-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.server-files-header > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+.server-files-header .text-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.server-files-header h4 {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.server-files-header span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.server-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.server-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.server-file-item:hover {
+  background-color: var(--item-hover);
+  border-color: var(--accent);
+}
+
+.server-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  font-size: 12px;
+}
+
+.server-file-date {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: normal;
+}
+
+.today-badge {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--success);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.server-files-empty {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .server-files-panel {
+    position: static;
+    width: 100%;
+    margin-top: 20px;
+  }
+}
+
+.text-btn {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.server-progress-percent,
+.server-progress-message,
+.server-file-date,
+.server-files-header span,
+.server-files-empty {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.today-badge {
+  font-size: 11px;
+}
+
+.drag-handle {
+  opacity: 0.75;
+}

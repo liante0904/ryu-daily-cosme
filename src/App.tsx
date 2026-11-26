@@ -1,19 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { CalendarDays, CircleHelp, LogOut, Plus } from 'lucide-react';
+import { CalendarDays, LogOut } from 'lucide-react';
 import { LegacyMafiaApp } from './LegacyMafiaApp';
 import type { HubArea, HubWorkItem } from './api/workHubRepository';
 import { LoginScreen, WorkHubLoadingScreen } from './components/workhub/LoginScreen';
-import { WorkHubDashboard } from './components/workhub/WorkHubDashboard';
-import { WorkHubCalendar } from './components/workhub/WorkHubCalendar';
-import { EconomicInstagramWorkspace } from './components/workhub/EconomicInstagramWorkspace';
-import { BlogReviewWorkspace } from './components/workhub/BlogReviewWorkspace';
-import { BlogReviewModal } from './components/workhub/BlogReviewModal';
-import { LEGACY_BLOG_CATEGORY } from './components/workhub/blogReviewConfig';
-import { WorkHubItemModal } from './components/workhub/WorkHubItemModal';
+import { WorkHubContent } from './components/workhub/WorkHubContent';
+import { WorkHubModalHost } from './components/workhub/WorkHubModalHost';
 import { WorkHubSidebar } from './components/workhub/WorkHubSidebar';
-import { WorkHubTableView } from './components/workhub/WorkHubTableView';
 import { useWorkHub } from './hooks/useWorkHub';
+import { useWorkHubNavigation } from './hooks/useWorkHubNavigation';
 import { createBlankWorkItem } from './workHubConfig';
 import './Hub.css';
 
@@ -33,16 +28,26 @@ function App() {
     saveItem,
     deleteItem,
   } = useWorkHub();
+  const navigation = useWorkHubNavigation(items);
+  const {
+    area,
+    setArea,
+    category,
+    view,
+    query,
+    setQuery,
+    statusFilter,
+    setStatusFilter,
+    mobileNav,
+    setMobileNav,
+    filteredItems,
+    chooseArea,
+    go,
+  } = navigation;
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [area, setArea] = useState<HubArea>('개인');
-  const [category, setCategory] = useState('실험실');
-  const [view, setView] = useState('대시보드');
-  const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('전체');
   const [modal, setModal] = useState<HubWorkItem | null>(null);
-  const [mobileNav, setMobileNav] = useState(false);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -58,41 +63,17 @@ function App() {
     logout();
   };
 
-  const chooseArea = (nextArea: HubArea) => {
-    setArea(nextArea);
-    setCategory(nextArea === '개인' ? '실험실' : '더샘 마케팅');
-    setView('대시보드');
-    setMobileNav(false);
+  const handleSaveItem = async (item: HubWorkItem) => {
+    await saveItem(item);
+    setModal(null);
   };
 
-  const go = (nextView: string, nextCategory?: string) => {
-    setView(nextView);
-    if (nextCategory) setCategory(nextCategory);
-    setMobileNav(false);
+  const handleDeleteItem = async (id: string) => {
+    await deleteItem(id);
+    setModal(null);
   };
 
-  const filtered = useMemo(
-    () =>
-      items
-        .filter(
-          (item) =>
-            (view === '대시보드' || view === '전체 업무'
-              ? true
-              : item.area === area &&
-                (item.category === category ||
-                  (category === '블로그' && item.category === LEGACY_BLOG_CATEGORY))) &&
-            (!query ||
-              `${item.title} ${item.category} ${item.memo} ${item.channel} ${item.agency}`
-                .toLowerCase()
-                .includes(query.toLowerCase())) &&
-            (statusFilter === '전체' || item.status === statusFilter)
-        )
-        .sort((a, b) => b.updated.localeCompare(a.updated)),
-    [items, view, area, category, query, statusFilter]
-  );
-  const isCalendar = view === '목록' && area === '개인' && (category === '캘린더' || category === 'SNS 캘린더');
-  const isEconomicInstagram = view === '목록' && area === '개인' && category === '경제 인스타';
-  const isBlogWorkspace = view === '목록' && area === '개인' && category === '블로그';
+  const openNewItem = () => setModal(createBlankWorkItem(area, category));
 
   if (!token) {
     return (
@@ -131,13 +112,13 @@ function App() {
         onCloseMobileNav={() => setMobileNav(false)}
         onChooseArea={chooseArea}
         onGo={go}
-        onSelectPersonalCategory={(cat) => {
+        onSelectPersonalCategory={(nextCategory) => {
           setArea('개인');
-          go('목록', cat);
+          go('목록', nextCategory);
         }}
-        onSelectCompanyCategory={(cat) => {
+        onSelectCompanyCategory={(nextCategory) => {
           setArea('회사');
-          go('목록', cat);
+          go('목록', nextCategory);
         }}
         onNewPersonalItem={() => {
           setArea('개인');
@@ -170,152 +151,45 @@ function App() {
           </div>
         </header>
 
-        <section className="hub-content">
-          {syncError && (
-            <div className="sync-banner" role="alert">
-              <CircleHelp size={16} />
-              <span>{syncError}</span>
-              <button onClick={() => void reloadItems()}>다시 시도</button>
-            </div>
-          )}
-
-          <div className="welcome-row">
-            <div>
-              <div className="eyebrow">
-                {view === '대시보드' ? 'MONDAY, YOUR SPACE' : `WORKSPACE · ${area.toUpperCase()}`}
-              </div>
-              <h1>
-                {view === '대시보드' ? '안녕하세요, 지영님' : ` ${view === '목록' ? category : view}`}
-              </h1>
-              <p>
-                {view === '대시보드'
-                  ? '오늘의 흐름을 확인하고, 중요한 일부터 시작해 보세요.'
-                  : isEconomicInstagram
-                    ? '콘텐츠 일정을 달력에 바로 적고 업로드 계획을 관리해 보세요.'
-                    : '업무와 기록을 한곳에서 정리하고 바로 업데이트하세요.'}
-              </p>
-            </div>
-            {!isCalendar && !isEconomicInstagram && !isBlogWorkspace && (
-              <button className="primary-btn" onClick={() => setModal(createBlankWorkItem(area, category))}>
-                <Plus size={17} /> 새 항목
-              </button>
-            )}
-          </div>
-
-          {view === '대시보드' ? (
-            <WorkHubDashboard
-              items={items}
-              onEditItem={setModal}
-              onStatusChange={(item, status) => {
-                void saveItem({ ...item, status, updated: new Date().toISOString() }).catch(
-                  () => undefined
-                );
-              }}
-              onOpenAllTasks={(nextStatus) => {
-                setStatusFilter(nextStatus);
-                go('전체 업무');
-              }}
-              onOpenCategory={(nextArea, nextCategory) => {
-                setArea(nextArea);
-                go('목록', nextCategory);
-              }}
-            />
-          ) : isCalendar ? (
-            <WorkHubCalendar
-              category={category as '캘린더' | 'SNS 캘린더'}
-              items={items}
-              onAdd={(date) => setModal({ ...createBlankWorkItem(area, category), due: date })}
-              onEdit={setModal}
-            />
-          ) : isEconomicInstagram ? (
-            <EconomicInstagramWorkspace
-              items={items}
-              filteredItems={filtered}
-              query={query}
-              statusFilter={statusFilter}
-              onQueryChange={setQuery}
-              onStatusFilterChange={setStatusFilter}
-              onAdd={(date) => setModal({ ...createBlankWorkItem('개인', '경제 인스타'), due: date })}
-              onQuickAdd={async (date, title, format) => {
-                await saveItem({
-                  ...createBlankWorkItem('개인', '경제 인스타'),
-                  due: date,
-                  title,
-                  channel: format,
-                });
-              }}
-              onEdit={setModal}
-            />
-          ) : isBlogWorkspace ? (
-            <BlogReviewWorkspace
-              items={items}
-              onAdd={() => setModal(createBlankWorkItem('개인', '블로그'))}
-              onEdit={(item) => setModal({ ...item, area: '개인', category: '블로그' })}
-              onToggleCompleted={async (item) => {
-                await saveItem({
-                  ...item,
-                  area: '개인',
-                  category: '블로그',
-                  status: item.status === '완료' ? '진행 중' : '완료',
-                  updated: new Date().toISOString(),
-                });
-              }}
-            />
-          ) : (
-            <WorkHubTableView
-              area={area}
-              category={category}
-              allItems={items}
-              filteredItems={filtered}
-              query={query}
-              statusFilter={statusFilter}
-              onQueryChange={setQuery}
-              onStatusFilterChange={setStatusFilter}
-              onAddNew={() => setModal(createBlankWorkItem(area, category))}
-              onEditItem={setModal}
-            />
-          )}
-
-          <footer className="hub-footer">
-            <span>
-              {testMode
-                ? '테스트 모드 · 이 브라우저의 테스트 저장소'
-                : '저장 위치: PostgreSQL · 로그인 세션 유지 중'}
-            </span>
-            <span>자동 연동 방식은 미정 · 직접 확인 필요</span>
-          </footer>
-        </section>
+        <WorkHubContent
+          area={area}
+          category={category}
+          view={view}
+          items={items}
+          filteredItems={filteredItems}
+          query={query}
+          statusFilter={statusFilter}
+          testMode={testMode}
+          syncError={syncError}
+          onQueryChange={setQuery}
+          onStatusFilterChange={setStatusFilter}
+          onReload={() => void reloadItems()}
+          onEdit={setModal}
+          onSave={saveItem}
+          onAddNew={openNewItem}
+          onOpenAllTasks={(nextStatus) => {
+            setStatusFilter(nextStatus);
+            go('전체 업무');
+          }}
+          onOpenCategory={(nextArea: HubArea, nextCategory: string) => {
+            setArea(nextArea);
+            go('목록', nextCategory);
+          }}
+          onStatusChange={(item, status) => {
+            void saveItem({ ...item, status, updated: new Date().toISOString() }).catch(
+              () => undefined
+            );
+          }}
+        />
       </main>
 
-      {modal && modal.area === '개인' && modal.category === '블로그' ? (
-        <BlogReviewModal
-          item={modal}
-          isExisting={items.some((item) => item.id === modal.id)}
-          onClose={() => setModal(null)}
-          onSave={async (nextItem) => {
-            await saveItem({ ...nextItem, area: '개인', category: '블로그' });
-            setModal(null);
-          }}
-          onDelete={async () => {
-            await deleteItem(modal.id);
-            setModal(null);
-          }}
-        />
-      ) : modal ? (
-        <WorkHubItemModal
-          item={modal}
-          onClose={() => setModal(null)}
-          onSave={async (nextItem) => {
-            await saveItem(nextItem);
-            setModal(null);
-          }}
-          onDelete={async () => {
-            await deleteItem(modal.id);
-            setModal(null);
-          }}
-          isExisting={items.some((item) => item.id === modal.id)}
-        />
-      ) : null}
+      <WorkHubModalHost
+        item={modal}
+        isExisting={items.some((item) => item.id === modal?.id)}
+        onClose={() => setModal(null)}
+        onSave={handleSaveItem}
+        onDelete={handleDeleteItem}
+      />
     </div>
   );
 }
