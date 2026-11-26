@@ -10,14 +10,20 @@ import {
   writeStoredSession,
 } from '../api/workHubRepository';
 import type { HubWorkItem, WorkHubSession } from '../api/workHubRepository';
+import { createTestWorkHubRepository } from '../api/testWorkHubRepository';
+import { createUuid } from '../utils';
 
 /**
  * Manage Work Hub session authentication, legacy localStorage migration, and PostgreSQL CRUD.
  */
 export function useWorkHub() {
-  const repository = useMemo(() => createApiWorkHubRepository(), []);
+  const testMode = import.meta.env.VITE_TEST_LOGIN_BYPASS === 'true';
+  const apiRepository = useMemo(() => createApiWorkHubRepository(), []);
+  const testRepository = useMemo(() => createTestWorkHubRepository(), []);
   const [session, setSession] = useState<WorkHubSession | null>(() => readStoredSession());
   const token = session?.token ?? null;
+  const localPreview = testMode && Boolean(token?.startsWith('test-preview-'));
+  const repository = localPreview ? testRepository : apiRepository;
 
   const [items, setItems] = useState<HubWorkItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(Boolean(token));
@@ -39,7 +45,7 @@ export function useWorkHub() {
       setSyncError('');
       try {
         let remoteItems = await repository.list(accessToken);
-        if (localStorage.getItem(LEGACY_IMPORT_KEY) !== '1') {
+        if (!testMode && localStorage.getItem(LEGACY_IMPORT_KEY) !== '1') {
           const localItems = readLegacyWorkHubItems();
           const existingIds = new Set(remoteItems.map((item) => item.id));
           let importedAny = false;
@@ -64,7 +70,7 @@ export function useWorkHub() {
         setItemsLoading(false);
       }
     },
-    [repository, expireSession]
+    [repository, expireSession, testMode]
   );
 
   useEffect(() => {
@@ -136,7 +142,7 @@ export function useWorkHub() {
       setLoginBusy(true);
       setLoginError('');
       try {
-        const auth = await repository.login(username, password);
+        const auth = await apiRepository.login(username, password);
         const nextSession = writeStoredSession(auth.token, auth.expires_at);
         setItemsLoading(true);
         setSession(nextSession);
@@ -148,8 +154,15 @@ export function useWorkHub() {
         setLoginBusy(false);
       }
     },
-    [repository]
+    [apiRepository]
   );
+
+  const enterTestMode = useCallback(() => {
+    const expiresAt = Math.floor(Date.now() / 1000) + 8 * 60 * 60;
+    const nextSession = writeStoredSession(`test-preview-${createUuid()}`, expiresAt);
+    setItemsLoading(true);
+    setSession(nextSession);
+  }, []);
 
   const logout = useCallback(() => {
     clearStoredSession();
@@ -166,7 +179,9 @@ export function useWorkHub() {
     syncError,
     loginBusy,
     loginError,
+    testMode,
     login,
+    enterTestMode,
     logout,
     reloadItems,
     saveItem,

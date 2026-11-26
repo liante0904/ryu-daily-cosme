@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../utils';
+import { API_BASE_URL, createUuid } from '../utils';
 
 export type HubArea = '개인' | '회사';
 export type HubStatus = '할 일' | '진행 중' | '보류' | '완료';
@@ -165,7 +165,7 @@ export function normalizeWorkHubItem(raw: Partial<HubWorkItem>): HubWorkItem {
     raw.priority === '높음' || raw.priority === '낮음' ? raw.priority : '보통';
 
   return {
-    id: typeof raw.id === 'string' && raw.id.trim() ? raw.id : crypto.randomUUID(),
+    id: typeof raw.id === 'string' && raw.id.trim() ? raw.id : createUuid(),
     area,
     category: typeof raw.category === 'string' && raw.category ? raw.category : area === '개인' ? '실험실' : '더샘 마케팅',
     title: typeof raw.title === 'string' ? raw.title : '',

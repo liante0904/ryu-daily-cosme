@@ -7,6 +7,7 @@ import {
   House,
   Plus,
   Settings2,
+  Share2,
   Sparkles,
 } from 'lucide-react';
 import type { HubArea } from '../../api/workHubRepository';
@@ -68,7 +69,7 @@ export function WorkHubSidebar({
             <Plus size={14} />
           </button>
         </div>
-        {HUB_CATEGORIES.개인.map((cat) => (
+        {HUB_CATEGORIES.개인.filter((cat) => cat !== 'SNS 캘린더').map((cat) => (
           <button
             key={cat}
             className={`nav-item sub ${area === '개인' && category === cat && view !== '대시보드' ? 'active' : ''}`}
@@ -78,6 +79,13 @@ export function WorkHubSidebar({
             {cat}
           </button>
         ))}
+        <div className="nav-label">SNS</div>
+        <button
+          className={`nav-item sub ${area === '개인' && category === 'SNS 캘린더' && view !== '대시보드' ? 'active' : ''}`}
+          onClick={() => onSelectPersonalCategory('SNS 캘린더')}
+        >
+          <Share2 size={15} /> 캘린더
+        </button>
 
         <button
           className={`workspace-select company-select ${area === '회사' ? 'selected' : ''}`}

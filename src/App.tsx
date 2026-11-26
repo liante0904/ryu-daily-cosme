@@ -5,6 +5,11 @@ import { LegacyMafiaApp } from './LegacyMafiaApp';
 import type { HubArea, HubWorkItem } from './api/workHubRepository';
 import { LoginScreen, WorkHubLoadingScreen } from './components/workhub/LoginScreen';
 import { WorkHubDashboard } from './components/workhub/WorkHubDashboard';
+import { WorkHubCalendar } from './components/workhub/WorkHubCalendar';
+import { EconomicInstagramWorkspace } from './components/workhub/EconomicInstagramWorkspace';
+import { BlogReviewWorkspace } from './components/workhub/BlogReviewWorkspace';
+import { BlogReviewModal } from './components/workhub/BlogReviewModal';
+import { LEGACY_BLOG_CATEGORY } from './components/workhub/blogReviewConfig';
 import { WorkHubItemModal } from './components/workhub/WorkHubItemModal';
 import { WorkHubSidebar } from './components/workhub/WorkHubSidebar';
 import { WorkHubTableView } from './components/workhub/WorkHubTableView';
@@ -20,7 +25,9 @@ function App() {
     syncError,
     loginBusy,
     loginError,
+    testMode,
     login,
+    enterTestMode,
     logout,
     reloadItems,
     saveItem,
@@ -71,7 +78,9 @@ function App() {
           (item) =>
             (view === '대시보드' || view === '전체 업무'
               ? true
-              : item.area === area && item.category === category) &&
+              : item.area === area &&
+                (item.category === category ||
+                  (category === '블로그' && item.category === LEGACY_BLOG_CATEGORY))) &&
             (!query ||
               `${item.title} ${item.category} ${item.memo} ${item.channel} ${item.agency}`
                 .toLowerCase()
@@ -81,6 +90,9 @@ function App() {
         .sort((a, b) => b.updated.localeCompare(a.updated)),
     [items, view, area, category, query, statusFilter]
   );
+  const isCalendar = view === '목록' && area === '개인' && (category === '캘린더' || category === 'SNS 캘린더');
+  const isEconomicInstagram = view === '목록' && area === '개인' && category === '경제 인스타';
+  const isBlogWorkspace = view === '목록' && area === '개인' && category === '블로그';
 
   if (!token) {
     return (
@@ -92,6 +104,8 @@ function App() {
         onSubmit={handleLogin}
         busy={loginBusy}
         error={loginError}
+        showTestEntry={testMode}
+        onTestEntry={enterTestMode}
       />
     );
   }
@@ -176,12 +190,16 @@ function App() {
               <p>
                 {view === '대시보드'
                   ? '오늘의 흐름을 확인하고, 중요한 일부터 시작해 보세요.'
-                  : '업무와 기록을 한곳에서 정리하고 바로 업데이트하세요.'}
+                  : isEconomicInstagram
+                    ? '콘텐츠 일정을 달력에 바로 적고 업로드 계획을 관리해 보세요.'
+                    : '업무와 기록을 한곳에서 정리하고 바로 업데이트하세요.'}
               </p>
             </div>
-            <button className="primary-btn" onClick={() => setModal(createBlankWorkItem(area, category))}>
-              <Plus size={17} /> 새 항목
-            </button>
+            {!isCalendar && !isEconomicInstagram && !isBlogWorkspace && (
+              <button className="primary-btn" onClick={() => setModal(createBlankWorkItem(area, category))}>
+                <Plus size={17} /> 새 항목
+              </button>
+            )}
           </div>
 
           {view === '대시보드' ? (
@@ -202,6 +220,47 @@ function App() {
                 go('목록', nextCategory);
               }}
             />
+          ) : isCalendar ? (
+            <WorkHubCalendar
+              category={category as '캘린더' | 'SNS 캘린더'}
+              items={items}
+              onAdd={(date) => setModal({ ...createBlankWorkItem(area, category), due: date })}
+              onEdit={setModal}
+            />
+          ) : isEconomicInstagram ? (
+            <EconomicInstagramWorkspace
+              items={items}
+              filteredItems={filtered}
+              query={query}
+              statusFilter={statusFilter}
+              onQueryChange={setQuery}
+              onStatusFilterChange={setStatusFilter}
+              onAdd={(date) => setModal({ ...createBlankWorkItem('개인', '경제 인스타'), due: date })}
+              onQuickAdd={async (date, title, format) => {
+                await saveItem({
+                  ...createBlankWorkItem('개인', '경제 인스타'),
+                  due: date,
+                  title,
+                  channel: format,
+                });
+              }}
+              onEdit={setModal}
+            />
+          ) : isBlogWorkspace ? (
+            <BlogReviewWorkspace
+              items={items}
+              onAdd={() => setModal(createBlankWorkItem('개인', '블로그'))}
+              onEdit={(item) => setModal({ ...item, area: '개인', category: '블로그' })}
+              onToggleCompleted={async (item) => {
+                await saveItem({
+                  ...item,
+                  area: '개인',
+                  category: '블로그',
+                  status: item.status === '완료' ? '진행 중' : '완료',
+                  updated: new Date().toISOString(),
+                });
+              }}
+            />
           ) : (
             <WorkHubTableView
               area={area}
@@ -218,13 +277,31 @@ function App() {
           )}
 
           <footer className="hub-footer">
-            <span>저장 위치: PostgreSQL · 로그인 세션 유지 중</span>
+            <span>
+              {testMode
+                ? '테스트 모드 · 이 브라우저의 테스트 저장소'
+                : '저장 위치: PostgreSQL · 로그인 세션 유지 중'}
+            </span>
             <span>자동 연동 방식은 미정 · 직접 확인 필요</span>
           </footer>
         </section>
       </main>
 
-      {modal && (
+      {modal && modal.area === '개인' && modal.category === '블로그' ? (
+        <BlogReviewModal
+          item={modal}
+          isExisting={items.some((item) => item.id === modal.id)}
+          onClose={() => setModal(null)}
+          onSave={async (nextItem) => {
+            await saveItem({ ...nextItem, area: '개인', category: '블로그' });
+            setModal(null);
+          }}
+          onDelete={async () => {
+            await deleteItem(modal.id);
+            setModal(null);
+          }}
+        />
+      ) : modal ? (
         <WorkHubItemModal
           item={modal}
           onClose={() => setModal(null)}
@@ -238,7 +315,7 @@ function App() {
           }}
           isExisting={items.some((item) => item.id === modal.id)}
         />
-      )}
+      ) : null}
     </div>
   );
 }

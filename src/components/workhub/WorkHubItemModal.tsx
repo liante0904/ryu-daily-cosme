@@ -26,6 +26,7 @@ export function WorkHubItemModal({
   const put = (key: keyof HubWorkItem, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value, updated: new Date().toISOString() }));
   const isCompanyMarketing = form.area === '회사' && form.category === '더샘 마케팅';
+  const isEconomicInstagram = form.area === '개인' && form.category === '경제 인스타';
 
   const submit = async () => {
     if (!form.title.trim()) return;
@@ -138,6 +139,15 @@ export function WorkHubItemModal({
                 onChange={(event) => put('due', event.target.value)}
               />
             </label>
+            {isEconomicInstagram && (
+              <label>
+                콘텐츠 형식
+                <select value={form.channel} onChange={(event) => put('channel', event.target.value)}>
+                  <option value="">선택</option>
+                  {['릴스', '피드', '스토리', '라이브', '기타'].map((format) => <option key={format}>{format}</option>)}
+                </select>
+              </label>
+            )}
           </div>
           <label>
             메모
