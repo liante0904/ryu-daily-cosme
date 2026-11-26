@@ -1,7 +1,7 @@
 import type { HubArea, HubPriority, HubStatus, HubWorkItem } from './api/workHubRepository';
 
 export const HUB_CATEGORIES: Record<HubArea, string[]> = {
-  개인: ['실험실', '콘텐츠 제작', '경제 인스타', '블로그·릴스 아이디어', '여행·호캉스', '집', '차량', '통신', '캘린더'],
+  개인: ['실험실', '콘텐츠 제작', '경제 인스타', '블로그·릴스 아이디어', '여행·호캉스', '집', '차량', '통신', '캘린더', 'SNS 캘린더'],
   회사: ['더샘 마케팅', 'mafia'],
 };
 

@@ -5,6 +5,7 @@ import { LegacyMafiaApp } from './LegacyMafiaApp';
 import type { HubArea, HubWorkItem } from './api/workHubRepository';
 import { LoginScreen, WorkHubLoadingScreen } from './components/workhub/LoginScreen';
 import { WorkHubDashboard } from './components/workhub/WorkHubDashboard';
+import { WorkHubCalendar } from './components/workhub/WorkHubCalendar';
 import { WorkHubItemModal } from './components/workhub/WorkHubItemModal';
 import { WorkHubSidebar } from './components/workhub/WorkHubSidebar';
 import { WorkHubTableView } from './components/workhub/WorkHubTableView';
@@ -83,6 +84,7 @@ function App() {
         .sort((a, b) => b.updated.localeCompare(a.updated)),
     [items, view, area, category, query, statusFilter]
   );
+  const isCalendar = view === '목록' && area === '개인' && (category === '캘린더' || category === 'SNS 캘린더');
 
   if (!token) {
     return (
@@ -183,9 +185,11 @@ function App() {
                   : '업무와 기록을 한곳에서 정리하고 바로 업데이트하세요.'}
               </p>
             </div>
-            <button className="primary-btn" onClick={() => setModal(createBlankWorkItem(area, category))}>
-              <Plus size={17} /> 새 항목
-            </button>
+            {!isCalendar && (
+              <button className="primary-btn" onClick={() => setModal(createBlankWorkItem(area, category))}>
+                <Plus size={17} /> 새 항목
+              </button>
+            )}
           </div>
 
           {view === '대시보드' ? (
@@ -205,6 +209,13 @@ function App() {
                 setArea(nextArea);
                 go('목록', nextCategory);
               }}
+            />
+          ) : isCalendar ? (
+            <WorkHubCalendar
+              category={category as '캘린더' | 'SNS 캘린더'}
+              items={items}
+              onAdd={(date) => setModal({ ...createBlankWorkItem(area, category), due: date })}
+              onEdit={setModal}
             />
           ) : (
             <WorkHubTableView
