@@ -11,6 +11,7 @@ import {
 } from '../api/workHubRepository';
 import type { HubWorkItem, WorkHubSession } from '../api/workHubRepository';
 import { createTestWorkHubRepository } from '../api/testWorkHubRepository';
+import { createUuid } from '../utils';
 
 /**
  * Manage Work Hub session authentication, legacy localStorage migration, and PostgreSQL CRUD.
@@ -158,7 +159,7 @@ export function useWorkHub() {
 
   const enterTestMode = useCallback(() => {
     const expiresAt = Math.floor(Date.now() / 1000) + 8 * 60 * 60;
-    const nextSession = writeStoredSession(`test-preview-${crypto.randomUUID()}`, expiresAt);
+    const nextSession = writeStoredSession(`test-preview-${createUuid()}`, expiresAt);
     setItemsLoading(true);
     setSession(nextSession);
   }, []);
