@@ -1,0 +1,5 @@
+.instagram-workspace{display:grid;gap:12px}
+.instagram-sheet-tabs{display:flex;align-items:center;gap:5px;padding:4px;width:max-content;border:1px solid var(--hub-line);border-radius:10px;background:#fff}
+.instagram-sheet-tabs button{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:#77788a;font-size:11px;font-weight:700}
+.instagram-sheet-tabs button.active{background:#f0edff;color:#674dc7}
+.instagram-sheet-tabs button:focus-visible{outline:2px solid #8d78de;outline-offset:2px}
