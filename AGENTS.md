@@ -44,6 +44,13 @@ OCI2 테스트 서버의 `ryu-daily-cosme` checkout에서 작업한다. 배포 �
 - ESLint 검사: `npm run lint`
 - 로컬 빌드 미리보기: `npm run preview`
 
+### OCI2 실시간 테스트 화면
+
+- OCI2에는 사용자 systemd 서비스 `ryu-cosme-vite.service`가 현재 `test` checkout을 감시하는 Vite 개발 서버를 띄운다.
+- Tailscale Serve의 `/ryu-cosme/` 경로가 `127.0.0.1:5175`로 연결되므로, 파일을 저장하면 [OCI2 미리보기](http://oci2-infra.tailb32978.ts.net/ryu-cosme/)에 바로 반영된다. 같은 tailnet에 연결한 브라우저에서 열어야 한다.
+- 이 미리보기는 `VITE_TEST_LOGIN_BYPASS=true`인 테스트 모드이며, Work Hub 테스트 항목은 해당 브라우저의 로컬 저장소에 저장한다. 코드가 화면에 즉시 반영되는 것과 Git 커밋·Netlify 배포는 별도 작업이다.
+- 서비스 점검/재시작: `systemctl --user status ryu-cosme-vite.service` / `systemctl --user restart ryu-cosme-vite.service`.
+
 코드 변경 후에는 변경 범위에 맞는 빌드 또는 린트 명령을 실행한다. 사용자 요청이 없는 한 검증 명령을 추가하거나 운영 배포를 수행하지 않는다. 결과를 보고할 때 로컬 빌드, 원격 푸시, Netlify 배포 완료, 실제 URL 확인을 서로 다른 사실로 구분한다.
 
 ## 변경 원칙
